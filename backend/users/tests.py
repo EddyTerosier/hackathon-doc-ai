@@ -23,7 +23,7 @@ class AuthAPITests(TestCase):
         self.user_payload = {
             "nom": "Dupont",
             "prenom": "Marie",
-            "role": "Salarie",
+            "role": "Employee",
             "email": "marie.dupont@example.com",
             "password": "motdepasse123",
         }
@@ -40,7 +40,7 @@ class AuthAPITests(TestCase):
         user = User(
             nom="Dupont",
             prenom="Marie",
-            role="Salarie",
+            role="Employee",
             email="marie.dupont@example.com",
         )
         user.set_password("motdepasse123")
@@ -72,7 +72,7 @@ class AuthAPITests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data["nom"], "Dupont")
-        self.assertEqual(response.data["role"], "Salarie")
+        self.assertEqual(response.data["role"], "Employee")
 
     def test_refresh_returns_new_tokens(self):
         register_response = self.client.post(
@@ -110,8 +110,8 @@ class SeedUsersCommandTests(TestCase):
         call_command("seed_users")
 
         self.assertEqual(User.objects.count(), 4)
-        self.assertEqual(User.objects(role=User.ROLE_COMPTABLE).count(), 2)
-        self.assertEqual(User.objects(role=User.ROLE_SALARIE).count(), 2)
+        self.assertEqual(User.objects(role=User.ROLE_ACCOUNTANT).count(), 2)
+        self.assertEqual(User.objects(role=User.ROLE_EMPLOYEE).count(), 2)
         self.assertIsNotNone(User.objects(email="admin1@hackathon.local").first())
 
     def test_seed_users_command_is_idempotent(self):

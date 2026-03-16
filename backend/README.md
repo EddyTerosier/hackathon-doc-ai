@@ -13,7 +13,7 @@
 {
   "nom": "Dupont",
   "prenom": "Marie",
-  "role": "Salarie",
+  "role": "Employee",
   "email": "marie.dupont@example.com",
   "password": "motdepasse123"
 }
@@ -48,8 +48,8 @@ python manage.py test
 ## Inserer des donnees de base
 
 La commande ci-dessous ajoute 4 utilisateurs par defaut :
-- 2 comptes admin avec le role `Comptable`
-- 2 comptes avec le role `Salarie`
+- 2 comptes admin avec le role `Accountant`
+- 2 comptes avec le role `Employee`
 
 ```bash
 python manage.py seed_users

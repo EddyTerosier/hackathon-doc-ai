@@ -7,28 +7,28 @@ SEED_USERS = [
     {
         "nom": "Martin",
         "prenom": "Alice",
-        "role": User.ROLE_COMPTABLE,
+        "role": User.ROLE_ACCOUNTANT,
         "email": "admin1@hackathon.local",
         "password": "Admin12345!",
     },
     {
         "nom": "Bernard",
         "prenom": "Thomas",
-        "role": User.ROLE_COMPTABLE,
+        "role": User.ROLE_ACCOUNTANT,
         "email": "admin2@hackathon.local",
         "password": "Admin12345!",
     },
     {
         "nom": "Dubois",
         "prenom": "Sophie",
-        "role": User.ROLE_SALARIE,
+        "role": User.ROLE_EMPLOYEE,
         "email": "salarie1@hackathon.local",
         "password": "Salarie12345!",
     },
     {
         "nom": "Petit",
         "prenom": "Lucas",
-        "role": User.ROLE_SALARIE,
+        "role": User.ROLE_EMPLOYEE,
         "email": "salarie2@hackathon.local",
         "password": "Salarie12345!",
     },
@@ -37,7 +37,7 @@ SEED_USERS = [
 
 class Command(BaseCommand):
     help = (
-        "Insere 2 comptes admin (role Comptable) et 2 comptes Salarie "
+        "Insere 2 comptes admin (role Accountant) et 2 comptes Employee "
         "dans MongoDB sans creer de doublons."
     )
 

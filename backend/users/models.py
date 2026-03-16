@@ -4,9 +4,9 @@ import datetime
 
 
 class User(Document):
-    ROLE_SALARIE = "Salarie"
-    ROLE_COMPTABLE = "Comptable"
-    ROLE_CHOICES = (ROLE_SALARIE, ROLE_COMPTABLE)
+    ROLE_EMPLOYEE = "Employee"
+    ROLE_ACCOUNTANT = "Accountant"
+    ROLE_CHOICES = (ROLE_EMPLOYEE, ROLE_ACCOUNTANT)
 
     nom = StringField(required=True, max_length=120)
     prenom = StringField(required=True, max_length=120)
