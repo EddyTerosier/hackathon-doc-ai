@@ -1,8 +1,3 @@
-"""
-Module de classification et extraction documentaire
-Personne 3 - Hackathon Doc AI
-"""
-
 import re
 from dataclasses import dataclass, field
 from typing import Optional

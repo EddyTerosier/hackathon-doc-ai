@@ -1,8 +1,3 @@
-"""
-Tests unitaires - Classification & Extraction
-Personne 3 - Hackathon Doc AI
-"""
-
 import pytest
 from backend.extraction.classifier import (
     classify,
