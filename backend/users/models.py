@@ -8,8 +8,8 @@ class User(Document):
     ROLE_ACCOUNTANT = "Accountant"
     ROLE_CHOICES = (ROLE_EMPLOYEE, ROLE_ACCOUNTANT)
 
-    nom = StringField(required=True, max_length=120)
-    prenom = StringField(required=True, max_length=120)
+    last_name = StringField(required=True, max_length=120)
+    first_name = StringField(required=True, max_length=120)
     role = StringField(required=True, choices=ROLE_CHOICES)
     email = EmailField(required=True, unique=True)
     password = StringField(required=True)

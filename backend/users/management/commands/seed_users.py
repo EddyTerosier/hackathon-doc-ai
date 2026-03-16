@@ -5,29 +5,29 @@ from users.models import User
 
 SEED_USERS = [
     {
-        "nom": "Martin",
-        "prenom": "Alice",
+        "last_name": "Martin",
+        "first_name": "Alice",
         "role": User.ROLE_ACCOUNTANT,
         "email": "admin1@hackathon.local",
         "password": "Admin12345!",
     },
     {
-        "nom": "Bernard",
-        "prenom": "Thomas",
+        "last_name": "Bernard",
+        "first_name": "Thomas",
         "role": User.ROLE_ACCOUNTANT,
         "email": "admin2@hackathon.local",
         "password": "Admin12345!",
     },
     {
-        "nom": "Dubois",
-        "prenom": "Sophie",
+        "last_name": "Dubois",
+        "first_name": "Sophie",
         "role": User.ROLE_EMPLOYEE,
         "email": "salarie1@hackathon.local",
         "password": "Salarie12345!",
     },
     {
-        "nom": "Petit",
-        "prenom": "Lucas",
+        "last_name": "Petit",
+        "first_name": "Lucas",
         "role": User.ROLE_EMPLOYEE,
         "email": "salarie2@hackathon.local",
         "password": "Salarie12345!",
@@ -50,8 +50,8 @@ class Command(BaseCommand):
 
             if user is None:
                 user = User(
-                    nom=seed_data["nom"],
-                    prenom=seed_data["prenom"],
+                    last_name=seed_data["last_name"],
+                    first_name=seed_data["first_name"],
                     role=seed_data["role"],
                     email=seed_data["email"],
                 )
@@ -65,8 +65,8 @@ class Command(BaseCommand):
                 )
                 continue
 
-            user.nom = seed_data["nom"]
-            user.prenom = seed_data["prenom"]
+            user.last_name = seed_data["last_name"]
+            user.first_name = seed_data["first_name"]
             user.role = seed_data["role"]
             user.set_password(seed_data["password"])
             user.save()

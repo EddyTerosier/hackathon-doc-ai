@@ -21,8 +21,8 @@ class AuthAPITests(TestCase):
         self.me_url = "/api/auth/me/"
         self.refresh_url = "/api/auth/refresh/"
         self.user_payload = {
-            "nom": "Dupont",
-            "prenom": "Marie",
+            "last_name": "Dupont",
+            "first_name": "Marie",
             "role": "Employee",
             "email": "marie.dupont@example.com",
             "password": "motdepasse123",
@@ -38,8 +38,8 @@ class AuthAPITests(TestCase):
 
     def test_login_returns_tokens_for_valid_credentials(self):
         user = User(
-            nom="Dupont",
-            prenom="Marie",
+            last_name="Dupont",
+            first_name="Marie",
             role="Employee",
             email="marie.dupont@example.com",
         )
@@ -71,7 +71,8 @@ class AuthAPITests(TestCase):
         response = self.client.get(self.me_url)
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data["nom"], "Dupont")
+        self.assertEqual(response.data["last_name"], "Dupont")
+        self.assertEqual(response.data["first_name"], "Marie")
         self.assertEqual(response.data["role"], "Employee")
 
     def test_refresh_returns_new_tokens(self):

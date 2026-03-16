@@ -5,24 +5,24 @@ from .models import User
 
 class UserSerializer(serializers.Serializer):
     id = serializers.CharField(read_only=True)
-    nom = serializers.CharField()
-    prenom = serializers.CharField()
+    last_name = serializers.CharField()
+    first_name = serializers.CharField()
     role = serializers.ChoiceField(choices=User.ROLE_CHOICES)
     email = serializers.EmailField()
 
     def to_representation(self, instance):
         return {
             "id": str(instance.id),
-            "nom": instance.nom,
-            "prenom": instance.prenom,
+            "last_name": instance.last_name,
+            "first_name": instance.first_name,
             "role": instance.role,
             "email": instance.email,
         }
 
 
 class RegisterSerializer(serializers.Serializer):
-    nom = serializers.CharField(max_length=120)
-    prenom = serializers.CharField(max_length=120)
+    last_name = serializers.CharField(max_length=120)
+    first_name = serializers.CharField(max_length=120)
     role = serializers.ChoiceField(choices=User.ROLE_CHOICES)
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True, min_length=8)

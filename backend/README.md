@@ -11,8 +11,8 @@
 
 ```json
 {
-  "nom": "Dupont",
-  "prenom": "Marie",
+  "last_name": "Dupont",
+  "first_name": "Marie",
   "role": "Employee",
   "email": "marie.dupont@example.com",
   "password": "motdepasse123"
