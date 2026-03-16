@@ -1,0 +1,285 @@
+[
+  {
+    "filename": "FAC_SUP001_conforme.pdf",
+    "supplier_id": "SUP001",
+    "document_type": "facture",
+    "scenario": "conforme",
+    "expected_fields": {
+      "supplier_name": "Alpha Conseil",
+      "siret": "12345678901234",
+      "tva": "FR12123456789",
+      "date_emission": "2026-03-10",
+      "montant_ht": 1200.5,
+      "montant_ttc": 1440.6
+    },
+    "expected_issues": []
+  },
+  {
+    "filename": "URS_SUP001_conforme.pdf",
+    "supplier_id": "SUP001",
+    "document_type": "attestation_urssaf",
+    "scenario": "conforme",
+    "expected_fields": {
+      "supplier_name": "Alpha Conseil",
+      "siret": "12345678901234",
+      "date_expiration": "2026-06-30"
+    },
+    "expected_issues": []
+  },
+  {
+    "filename": "RIB_SUP001_conforme.pdf",
+    "supplier_id": "SUP001",
+    "document_type": "rib",
+    "scenario": "conforme",
+    "expected_fields": {
+      "supplier_name": "Alpha Conseil",
+      "iban": "FR7612345678901234567890123",
+      "bic": "AGRIFRPP"
+    },
+    "expected_issues": []
+  },
+
+  {
+    "filename": "FAC_SUP002_siret_incoherent.pdf",
+    "supplier_id": "SUP002",
+    "document_type": "facture",
+    "scenario": "siret_incoherent",
+    "expected_fields": {
+      "supplier_name": "Beta Services",
+      "siret": "23456789012345",
+      "tva": "FR23234567890",
+      "date_emission": "2026-03-11",
+      "montant_ht": 980.0,
+      "montant_ttc": 1176.0
+    },
+    "expected_issues": []
+  },
+  {
+    "filename": "URS_SUP002_siret_incoherent.pdf",
+    "supplier_id": "SUP002",
+    "document_type": "attestation_urssaf",
+    "scenario": "siret_incoherent",
+    "expected_fields": {
+      "supplier_name": "Beta Services",
+      "siret": "99999999999999",
+      "date_expiration": "2026-07-15"
+    },
+    "expected_issues": [
+      "SIRET incohérent avec la facture"
+    ]
+  },
+  {
+    "filename": "RIB_SUP002_siret_incoherent.pdf",
+    "supplier_id": "SUP002",
+    "document_type": "rib",
+    "scenario": "siret_incoherent",
+    "expected_fields": {
+      "supplier_name": "Beta Services",
+      "iban": "FR7630001007941234567890185",
+      "bic": "BNPAFRPP"
+    },
+    "expected_issues": []
+  },
+
+  {
+    "filename": "FAC_SUP003_attestation_expired.pdf",
+    "supplier_id": "SUP003",
+    "document_type": "facture",
+    "scenario": "attestation_expired",
+    "expected_fields": {
+      "supplier_name": "Gamma Batiment",
+      "siret": "34567890123456",
+      "tva": "FR34345678901",
+      "date_emission": "2026-03-12",
+      "montant_ht": 2500.0,
+      "montant_ttc": 3000.0
+    },
+    "expected_issues": []
+  },
+  {
+    "filename": "URS_SUP003_attestation_expired.pdf",
+    "supplier_id": "SUP003",
+    "document_type": "attestation_urssaf",
+    "scenario": "attestation_expired",
+    "expected_fields": {
+      "supplier_name": "Gamma Batiment",
+      "siret": "34567890123456",
+      "date_expiration": "2026-01-15"
+    },
+    "expected_issues": [
+      "Attestation URSSAF expirée"
+    ]
+  },
+  {
+    "filename": "RIB_SUP003_attestation_expired.pdf",
+    "supplier_id": "SUP003",
+    "document_type": "rib",
+    "scenario": "attestation_expired",
+    "expected_fields": {
+      "supplier_name": "Gamma Batiment",
+      "iban": "FR7610278000101234567890126",
+      "bic": "CMCIFR2A"
+    },
+    "expected_issues": []
+  },
+
+  {
+    "filename": "FAC_SUP004_invoice_degraded.pdf",
+    "supplier_id": "SUP004",
+    "document_type": "facture",
+    "scenario": "invoice_degraded",
+    "expected_fields": {
+      "supplier_name": "Delta Logistique",
+      "siret": "45678901234567",
+      "tva": "FR45456789012",
+      "date_emission": "2026-03-13",
+      "montant_ht": 1800.75,
+      "montant_ttc": 2160.9
+    },
+    "expected_issues": [
+      "Qualité OCR potentiellement dégradée"
+    ]
+  },
+  {
+    "filename": "URS_SUP004_invoice_degraded.pdf",
+    "supplier_id": "SUP004",
+    "document_type": "attestation_urssaf",
+    "scenario": "invoice_degraded",
+    "expected_fields": {
+      "supplier_name": "Delta Logistique",
+      "siret": "45678901234567",
+      "date_expiration": "2026-08-20"
+    },
+    "expected_issues": []
+  },
+  {
+    "filename": "RIB_SUP004_invoice_degraded.pdf",
+    "supplier_id": "SUP004",
+    "document_type": "rib",
+    "scenario": "invoice_degraded",
+    "expected_fields": {
+      "supplier_name": "Delta Logistique",
+      "iban": "FR7630011000011234567890153",
+      "bic": "SOGEFRPP"
+    },
+    "expected_issues": []
+  },
+  {
+    "filename": "FAC_SUP004_invoice_degraded_blur.pdf",
+    "supplier_id": "SUP004",
+    "document_type": "facture",
+    "scenario": "invoice_degraded",
+    "expected_fields": {
+      "supplier_name": "Delta Logistique",
+      "siret": "45678901234567",
+      "tva": "FR45456789012",
+      "date_emission": "2026-03-13",
+      "montant_ht": 1800.75,
+      "montant_ttc": 2160.9
+    },
+    "expected_issues": [
+      "Qualité OCR potentiellement dégradée"
+    ]
+  },
+  {
+    "filename": "FAC_SUP004_invoice_degraded_rotate.pdf",
+    "supplier_id": "SUP004",
+    "document_type": "facture",
+    "scenario": "invoice_degraded",
+    "expected_fields": {
+      "supplier_name": "Delta Logistique",
+      "siret": "45678901234567",
+      "tva": "FR45456789012",
+      "date_emission": "2026-03-13",
+      "montant_ht": 1800.75,
+      "montant_ttc": 2160.9
+    },
+    "expected_issues": [
+      "Qualité OCR potentiellement dégradée"
+    ]
+  },
+
+  {
+    "filename": "FAC_SUP005_rib_missing_bic.pdf",
+    "supplier_id": "SUP005",
+    "document_type": "facture",
+    "scenario": "rib_missing_bic",
+    "expected_fields": {
+      "supplier_name": "Epsilon Tech",
+      "siret": "56789012345678",
+      "tva": "FR56567890123",
+      "date_emission": "2026-03-14",
+      "montant_ht": 3200.0,
+      "montant_ttc": 3840.0
+    },
+    "expected_issues": []
+  },
+  {
+    "filename": "URS_SUP005_rib_missing_bic.pdf",
+    "supplier_id": "SUP005",
+    "document_type": "attestation_urssaf",
+    "scenario": "rib_missing_bic",
+    "expected_fields": {
+      "supplier_name": "Epsilon Tech",
+      "siret": "56789012345678",
+      "date_expiration": "2026-09-10"
+    },
+    "expected_issues": []
+  },
+  {
+    "filename": "RIB_SUP005_rib_missing_bic.pdf",
+    "supplier_id": "SUP005",
+    "document_type": "rib",
+    "scenario": "rib_missing_bic",
+    "expected_fields": {
+      "supplier_name": "Epsilon Tech",
+      "iban": "FR7614508000401234567890128",
+      "bic": ""
+    },
+    "expected_issues": [
+      "BIC manquant sur le RIB"
+    ]
+  },
+
+  {
+    "filename": "FAC_SUP006_ttc_lower_than_ht.pdf",
+    "supplier_id": "SUP006",
+    "document_type": "facture",
+    "scenario": "ttc_lower_than_ht",
+    "expected_fields": {
+      "supplier_name": "Zeta Formation",
+      "siret": "67890123456789",
+      "tva": "FR67678901234",
+      "date_emission": "2026-03-15",
+      "montant_ht": 1500.0,
+      "montant_ttc": 1400.0
+    },
+    "expected_issues": [
+      "Montant TTC inférieur au montant HT"
+    ]
+  },
+  {
+    "filename": "URS_SUP006_ttc_lower_than_ht.pdf",
+    "supplier_id": "SUP006",
+    "document_type": "attestation_urssaf",
+    "scenario": "ttc_lower_than_ht",
+    "expected_fields": {
+      "supplier_name": "Zeta Formation",
+      "siret": "67890123456789",
+      "date_expiration": "2026-10-05"
+    },
+    "expected_issues": []
+  },
+  {
+    "filename": "RIB_SUP006_ttc_lower_than_ht.pdf",
+    "supplier_id": "SUP006",
+    "document_type": "rib",
+    "scenario": "ttc_lower_than_ht",
+    "expected_fields": {
+      "supplier_name": "Zeta Formation",
+      "iban": "FR7630004000031234567890143",
+      "bic": "BNPAFRPPXXX"
+    },
+    "expected_issues": []
+  }
+]
