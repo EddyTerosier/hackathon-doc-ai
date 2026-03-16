@@ -1,5 +1,8 @@
 import json
 from pathlib import Path
+from tempfile import NamedTemporaryFile
+
+from PIL import Image, ImageDraw, ImageFont, ImageFilter
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
@@ -19,6 +22,10 @@ LEFT = 50
 RIGHT = PAGE_WIDTH - 50
 TOP = PAGE_HEIGHT - 50
 
+IMG_WIDTH = 1240
+IMG_HEIGHT = 1754
+IMG_MARGIN_X = 80
+
 
 def ensure_directories() -> None:
     FACTURE_DIR.mkdir(parents=True, exist_ok=True)
@@ -32,6 +39,10 @@ def load_suppliers() -> list[dict]:
     with suppliers_path.open("r", encoding="utf-8") as file:
         return json.load(file)
 
+
+# =========================
+# PDF NORMALS - REPORTLAB
+# =========================
 
 def draw_page_header(pdf: canvas.Canvas, title: str, supplier: dict) -> float:
     y = TOP
@@ -142,38 +153,122 @@ def create_rib_pdf(path: Path, supplier: dict) -> None:
     pdf.save()
 
 
+# =========================
+# DEGRADED PDFS - PIL IMAGE -> PDF
+# =========================
+
+def get_fonts() -> tuple[ImageFont.ImageFont, ImageFont.ImageFont, ImageFont.ImageFont]:
+    try:
+        title_font = ImageFont.truetype("arial.ttf", 34)
+        subtitle_font = ImageFont.truetype("arial.ttf", 22)
+        text_font = ImageFont.truetype("arial.ttf", 24)
+    except OSError:
+        title_font = ImageFont.load_default()
+        subtitle_font = ImageFont.load_default()
+        text_font = ImageFont.load_default()
+
+    return title_font, subtitle_font, text_font
+
+
+def create_base_image() -> tuple[Image.Image, ImageDraw.ImageDraw]:
+    image = Image.new("RGB", (IMG_WIDTH, IMG_HEIGHT), "white")
+    draw = ImageDraw.Draw(image)
+    return image, draw
+
+
+def draw_image_header(draw: ImageDraw.ImageDraw, supplier: dict, title: str, fonts: tuple) -> int:
+    title_font, subtitle_font, _ = fonts
+
+    draw.rectangle([(0, 0), (IMG_WIDTH, 140)], fill=(31, 41, 55))
+    draw.text((IMG_MARGIN_X, 35), title, fill="white", font=title_font)
+    draw.text(
+        (IMG_MARGIN_X, 90),
+        f"Reference dossier : {supplier['supplier_id']} | Scenario : {supplier['scenario']}",
+        fill="white",
+        font=subtitle_font,
+    )
+    return 190
+
+
+def draw_image_section_title(draw: ImageDraw.ImageDraw, y: int, title: str, fonts: tuple) -> int:
+    _, subtitle_font, _ = fonts
+    draw.text((IMG_MARGIN_X, y), title, fill=(17, 24, 39), font=subtitle_font)
+    draw.line((IMG_MARGIN_X, y + 35, IMG_WIDTH - IMG_MARGIN_X, y + 35), fill=(209, 213, 219), width=2)
+    return y + 55
+
+
+def draw_image_box(draw: ImageDraw.ImageDraw, y: int, items: list[tuple[str, str]], fonts: tuple) -> int:
+    _, _, text_font = fonts
+    box_height = 30 + len(items) * 48
+
+    draw.rounded_rectangle(
+        [(IMG_MARGIN_X, y), (IMG_WIDTH - IMG_MARGIN_X, y + box_height)],
+        radius=12,
+        outline=(209, 213, 219),
+        width=2,
+        fill=(249, 250, 251),
+    )
+
+    current_y = y + 18
+    for label, value in items:
+        draw.text((IMG_MARGIN_X + 20, current_y), f"{label} :", fill=(55, 65, 81), font=text_font)
+        draw.text((IMG_MARGIN_X + 320, current_y), value, fill="black", font=text_font)
+        current_y += 48
+
+    return y + box_height + 30
+
+
+def draw_image_footer(draw: ImageDraw.ImageDraw, text: str, fonts: tuple) -> None:
+    _, _, text_font = fonts
+    draw.text((IMG_MARGIN_X, IMG_HEIGHT - 70), text, fill=(107, 114, 128), font=text_font)
+
+
+def save_image_as_pdf(path: Path, image: Image.Image) -> None:
+    image_rgb = image.convert("RGB")
+    image_rgb.save(path, "PDF", resolution=150.0)
+
+
 def create_degraded_invoice_pdf(path: Path, supplier: dict, variant: str) -> None:
-    pdf = canvas.Canvas(str(path), pagesize=A4)
-    y = draw_page_header(pdf, "FACTURE FOURNISSEUR", supplier)
+    fonts = get_fonts()
+    image, draw = create_base_image()
+    y = draw_image_header(draw, supplier, "FACTURE FOURNISSEUR", fonts)
 
     if variant == "blur":
         siret_label = "S1RET"
         date_label = "Date em1ssion"
-        note = "Simulation document flou / OCR bruité."
+        footer = "Simulation document flou / OCR bruite."
     else:
         siret_label = "SIRET"
         date_label = "Date d'emission"
-        note = "Simulation document mal capturé / rotation."
+        footer = "Simulation document mal capture / rotation."
 
-    y = draw_section_title(pdf, "Informations fournisseur", y)
-    y = draw_key_value_box(pdf, [
+    y = draw_image_section_title(draw, y, "Informations fournisseur", fonts)
+    y = draw_image_box(draw, y, [
         ("Fournisseur", supplier["supplier_name"]),
         (siret_label, supplier["invoice_siret"]),
         ("TVA", supplier["tva"])
-    ], y)
+    ], fonts)
 
-    y = draw_section_title(pdf, "Informations de facturation", y)
-    y = draw_key_value_box(pdf, [
+    y = draw_image_section_title(draw, y, "Informations de facturation", fonts)
+    y = draw_image_box(draw, y, [
         (date_label, supplier["date_emission"]),
         ("Montant HT", f"{supplier['montant_ht']:.2f} EUR"),
         ("Montant TTC", f"{supplier['montant_ttc']:.2f} EUR")
-    ], y)
+    ], fonts)
 
-    pdf.setFont("Helvetica-Oblique", 10)
-    pdf.setFillColor(colors.HexColor("#B91C1C"))
-    pdf.drawString(LEFT, 60, note)
-    pdf.save()
+    draw_image_footer(draw, footer, fonts)
 
+    if variant == "blur":
+        image = image.filter(ImageFilter.GaussianBlur(radius=2.8))
+    elif variant == "rotate":
+        image = image.rotate(4, expand=True, fillcolor="white")
+
+    save_image_as_pdf(path, image)
+
+
+# =========================
+# GENERATION
+# =========================
 
 def generate_main_documents(suppliers: list[dict]) -> None:
     for supplier in suppliers:

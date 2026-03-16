@@ -12,6 +12,7 @@ Il permet de tester :
 * l'extraction des champs clés
 * la validation métier
 * la robustesse sur des documents dégradés
+* le traitement de fichiers PDF et d'images
 
 ---
 
@@ -64,13 +65,20 @@ dataset/
 │   ├── urssaf/
 │   ├── rib/
 │   └── degraded/
+├── raw_images/
+│   ├── facture/
+│   ├── urssaf/
+│   ├── rib/
+│   └── degraded/
 ├── ground_truth/
 │   ├── suppliers.json
-    ├── expected_documents.json
+│   ├── expected_documents.json
 │   └── expected_cases.json
 ├── templates/
+├── clean_generated_images.py
 ├── clean_generated_pdfs.py
 ├── generate_base_dataset.py
+├── generate_base_images.py
 └── README.md
 ```
 
@@ -80,7 +88,7 @@ dataset/
 
 ### `raw/`
 
-Contient les documents générés.
+Contient les documents PDF générés.
 
 #### `raw/facture/`
 
@@ -96,7 +104,29 @@ Contient les RIB PDF.
 
 #### `raw/degraded/`
 
-Contient les variantes dégradées de certains documents, utilisées pour tester la robustesse OCR.
+Contient les variantes dégradées PDF, avec vrai flou et vraie rotation pour certains cas.
+
+---
+
+### `raw_images/`
+
+Contient les documents image générés au format PNG.
+
+#### `raw_images/facture/`
+
+Contient les factures PNG.
+
+#### `raw_images/urssaf/`
+
+Contient les attestations URSSAF PNG.
+
+#### `raw_images/rib/`
+
+Contient les RIB PNG.
+
+#### `raw_images/degraded/`
+
+Contient les variantes dégradées PNG, avec vrai flou et vraie rotation pour certains cas.
 
 ---
 
@@ -119,6 +149,11 @@ On y retrouve notamment :
 * `date_expiration`
 * `montant_ht`
 * `montant_ttc`
+* `invoice_siret`
+* `urssaf_siret`
+* `rib_iban`
+* `rib_bic`
+* `degraded_documents`
 
 Ce fichier sert de base de génération des documents.
 
@@ -138,7 +173,7 @@ Ce fichier sert à vérifier si la logique de validation inter-documents fonctio
 
 ## Convention de nommage
 
-### Factures
+### Factures PDF
 
 Format :
 `FAC_<SUPPLIER_ID>_<SCENARIO>.pdf`
@@ -146,7 +181,7 @@ Format :
 Exemple :
 `FAC_SUP001_conforme.pdf`
 
-### Attestations URSSAF
+### Attestations URSSAF PDF
 
 Format :
 `URS_<SUPPLIER_ID>_<SCENARIO>.pdf`
@@ -154,7 +189,7 @@ Format :
 Exemple :
 `URS_SUP002_siret_incoherent.pdf`
 
-### RIB
+### RIB PDF
 
 Format :
 `RIB_<SUPPLIER_ID>_<SCENARIO>.pdf`
@@ -162,7 +197,7 @@ Format :
 Exemple :
 `RIB_SUP005_rib_missing_bic.pdf`
 
-### Variantes dégradées
+### Variantes PDF dégradées
 
 Format :
 `FAC_<SUPPLIER_ID>_<SCENARIO>_<VARIANTE>.pdf`
@@ -171,6 +206,17 @@ Exemples :
 
 * `FAC_SUP004_invoice_degraded_blur.pdf`
 * `FAC_SUP004_invoice_degraded_rotate.pdf`
+
+### Images PNG
+
+Même logique de nommage avec l’extension `.png`.
+
+Exemples :
+
+* `FAC_SUP001_conforme.png`
+* `URS_SUP002_siret_incoherent.png`
+* `RIB_SUP005_rib_missing_bic.png`
+* `FAC_SUP004_invoice_degraded_blur.png`
 
 ---
 
@@ -221,9 +267,27 @@ Les statuts globaux utilisés dans le dataset sont :
 
 ---
 
-## Génération du dataset
+## Prérequis
 
-Le dataset est généré automatiquement à partir du script :
+Créer et activer l’environnement virtuel :
+
+```bash
+python -m venv .venv
+source .venv\Scripts\Activate
+python -m pip install --upgrade pip
+```
+
+Installer les dépendances nécessaires :
+
+```bash
+pip install reportlab pillow
+```
+
+---
+
+## Génération des PDF
+
+Le dataset PDF est généré automatiquement avec :
 
 ```bash
 python dataset/generate_base_dataset.py
@@ -233,7 +297,7 @@ python dataset/generate_base_dataset.py
 
 ## Nettoyage des PDF générés
 
-Pour supprimer les PDF générés dans les dossiers `raw/`, utilisez le script :
+Pour supprimer les PDF générés dans les dossiers `raw/`, utilisez :
 
 ```bash
 python dataset/clean_generated_pdfs.py
@@ -246,7 +310,32 @@ Ce script supprime les fichiers PDF présents dans :
 * `dataset/raw/rib/`
 * `dataset/raw/degraded/`
 
-Il permet de repartir d’un dataset propre avant une nouvelle génération.
+---
+
+## Génération des images PNG
+
+Le dataset image est généré automatiquement avec :
+
+```bash
+python dataset/generate_base_images.py
+```
+
+---
+
+## Nettoyage des images générées
+
+Pour supprimer les images générées dans les dossiers `raw_images/`, utilisez :
+
+```bash
+python dataset/clean_generated_images.py
+```
+
+Ce script supprime les fichiers image présents dans :
+
+* `dataset/raw_images/facture/`
+* `dataset/raw_images/urssaf/`
+* `dataset/raw_images/rib/`
+* `dataset/raw_images/degraded/`
 
 ---
 
@@ -254,54 +343,67 @@ Il permet de repartir d’un dataset propre avant une nouvelle génération.
 
 Un `Makefile` est disponible à la racine du projet pour simplifier les commandes.
 
-### Générer le dataset
+### Générer les PDF
 
 ```bash
 make dataset-generate
 ```
 
-### Nettoyer les PDF générés
+### Nettoyer les PDF
 
 ```bash
 make dataset-clean
 ```
 
-### Nettoyer puis regénérer le dataset
+### Nettoyer puis regénérer les PDF
 
 ```bash
 make dataset-reset
 ```
 
----
-
-## Prérequis
-
-Créer et activer l’environnement virtuel :
+### Générer les images PNG
 
 ```bash
-python -m venv .venv
-source .venv\Scripts\Activate
-python -m pip install --upgrade pip
+make dataset-images-generate
 ```
 
-Installer la dépendance nécessaire à la génération PDF :
+### Nettoyer les images PNG
 
 ```bash
-pip install reportlab
+make dataset-images-clean
+```
+
+### Nettoyer puis regénérer les images PNG
+
+```bash
+make dataset-images-reset
 ```
 
 ---
 
 ## Résultat attendu après génération
 
-Le script génère :
+### PDF
+
+Le script PDF génère :
 
 * 6 factures PDF
 * 6 attestations URSSAF PDF
 * 6 RIB PDF
-* 2 variantes dégradées de facture
+* 2 variantes dégradées de facture PDF
 
 Soit un total de **20 documents PDF**.
+
+### Images PNG
+
+Le script image génère :
+
+* 6 factures PNG
+* 6 attestations URSSAF PNG
+* 6 RIB PNG
+* 2 variantes dégradées de facture PNG
+
+Soit un total de **20 images PNG**.
 
 ---
 
@@ -336,12 +438,12 @@ Il s’agit d’un dataset de démonstration pour hackathon, pas d’un corpus d
 
 Le dataset pourra être enrichi avec :
 
-* plusieurs variantes de mise en page par type de document
-* des PDF plus réalistes visuellement
-* des scans image `.png` ou `.jpg`
-* plus de cas dégradés
-* plus de scénarios métier
-* des champs absents ou mal formatés
+* davantage de scénarios métier
+* plus de documents par fournisseur
+* d’autres formats image
+* compression JPEG
+* documents encore plus dégradés
+* scans plus réalistes
 
 ---
 
@@ -349,4 +451,5 @@ Le dataset pourra être enrichi avec :
 
 * Tous les documents sont fictifs.
 * Les identifiants et coordonnées bancaires sont uniquement utilisés à des fins de test.
+* Les variantes `blur` et `rotate` appliquent une vraie transformation sur les images, et sur les PDF dégradés via génération image puis export PDF.
 * Le dataset est pensé pour rester simple, cohérent et facilement régénérable.
