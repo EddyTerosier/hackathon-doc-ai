@@ -1,0 +1,11 @@
+Informations fournisseur
+
+Fournisseur : Alpha Conseil
+SIRET : 12345678901234
+TVA intracommunautaire : FR12123456789
+
+Informations de facturation
+
+Date d'emission : 2026-03-10
+Montant HT : 1200.50 EUR
+Montant TTC : 1440.60 EUR

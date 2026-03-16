@@ -2,35 +2,28 @@ from airflow import DAG
 from airflow.operators.python import PythonOperator
 from datetime import datetime
 
-def ocr():
-    print("OCR")
-
-def classify():
-    print("classification")
-
-def extract():
-    print("extraction")
-
-def validate():
-    print("validation")
-
-def store():
-    print("mongo")
+from tasks.ocr_task import run_ocr
+from tasks.classify_task import run_classification
+from tasks.extract_task import run_extraction
+from tasks.store_mongo import store_results
+from tasks.validate_task import run_validation
+from tasks.update_status_task import update_status
 
 with DAG(
-    "document_pipeline",
-    start_date=datetime(2024,1,1),
+    dag_id="document_pipeline",
+    start_date=datetime(2024, 1, 1),
     schedule=None,
     catchup=False
 ) as dag:
 
-    t1 = PythonOperator(task_id="ocr", python_callable=ocr)
-    t2 = PythonOperator(task_id="classify", python_callable=classify)
-    t3 = PythonOperator(task_id="extract", python_callable=extract)
-    t4 = PythonOperator(task_id="validate", python_callable=validate)
-    t5 = PythonOperator(task_id="store", python_callable=store)
+    t1 = PythonOperator(task_id="ocr_task",           python_callable=run_ocr)
+    t2 = PythonOperator(task_id="classification_task", python_callable=run_classification)
+    t3 = PythonOperator(task_id="extraction_task",    python_callable=run_extraction)
+    t4 = PythonOperator(task_id="store_db_task",      python_callable=store_results)
+    t5 = PythonOperator(task_id="validation_task",    python_callable=run_validation)
+    t6 = PythonOperator(task_id="update_status_task", python_callable=update_status)
 
-    t1 >> t2 >> t3 >> t4 >> t5
+    t1 >> t2 >> t3 >> t4 >> t5 >> t6
 
 
 """ from airflow import DAG

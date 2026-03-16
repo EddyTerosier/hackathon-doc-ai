@@ -8,10 +8,10 @@ Le pipeline permet de :
 
 * uploader des documents
 * exécuter un OCR
-* classifier les documents
 * extraire les champs clés
-* valider les règles métier
 * stocker les résultats dans MongoDB
+* valider les règles métier
+* mettre à jour le statut du document
 
 Apache Airflow est utilisé pour **orchestrer le pipeline documentaire**.
 
@@ -133,13 +133,13 @@ upload
    ↓
 ocr_task (Tesseract / EasyOCR)
    ↓
-classification_task
-   ↓
 extraction_task (SIRET / TVA / IBAN / dates)
+   ↓
+store_db_task (MongoDB / Data Lake)
    ↓
 validation_task
    ↓
-store_mongo (MongoDB / Data Lake)
+update_status_task
    ↓
 API FastAPI
    ↓
@@ -161,10 +161,10 @@ backend/
             document_pipeline.py
         tasks/
             ocr_task.py
-            classify_task.py
             extract_task.py
-            validate_task.py
             store_mongo.py
+            validate_task.py
+            update_status_task.py
 ```
 
 ---
