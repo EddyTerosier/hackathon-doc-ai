@@ -1,0 +1,48 @@
+[
+  {
+    "supplier_id": "SUP001",
+    "scenario": "conforme",
+    "expected_status": "conforme",
+    "expected_issues": []
+  },
+  {
+    "supplier_id": "SUP002",
+    "scenario": "siret_incoherent",
+    "expected_status": "non_conforme",
+    "expected_issues": [
+      "SIRET incohérent entre facture et attestation"
+    ]
+  },
+  {
+    "supplier_id": "SUP003",
+    "scenario": "attestation_expired",
+    "expected_status": "non_conforme",
+    "expected_issues": [
+      "Attestation URSSAF expirée"
+    ]
+  },
+  {
+    "supplier_id": "SUP004",
+    "scenario": "invoice_degraded",
+    "expected_status": "a_verifier",
+    "expected_issues": [
+      "Qualité OCR potentiellement dégradée sur la facture"
+    ]
+  },
+  {
+    "supplier_id": "SUP005",
+    "scenario": "rib_missing_bic",
+    "expected_status": "a_verifier",
+    "expected_issues": [
+      "BIC manquant sur le RIB"
+    ]
+  },
+  {
+    "supplier_id": "SUP006",
+    "scenario": "ttc_lower_than_ht",
+    "expected_status": "non_conforme",
+    "expected_issues": [
+      "Montant TTC inférieur au montant HT"
+    ]
+  }
+]

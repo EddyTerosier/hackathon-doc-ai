@@ -60,7 +60,7 @@ services:
     container_name: hackathon-airflow
     restart: unless-stopped
     environment:
-      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__EXECUTOR: SequentialExecutor
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: sqlite:////opt/airflow/airflow.db
       AIRFLOW__CORE__LOAD_EXAMPLES: "False"
       MONGO_URI: mongodb://admin:admin123@mongo:27017/?authSource=admin
@@ -69,6 +69,7 @@ services:
     volumes:
       - ./airflow/dags:/opt/airflow/dags
       - airflow_logs:/opt/airflow/logs
+      - airflow_db:/opt/airflow
     depends_on:
       - mongo
     command: standalone
@@ -76,3 +77,4 @@ services:
 volumes:
   mongo_data:
   airflow_logs:
+  airflow_db:
