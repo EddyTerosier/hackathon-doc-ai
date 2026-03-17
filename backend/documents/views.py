@@ -9,6 +9,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .models import DocumentFile, DocumentGroup
+from .ocr import process_document_file_async
 from .serializers import (
     DocumentFileSerializer,
     DocumentGroupSerializer,
@@ -118,6 +119,14 @@ class GroupDocumentListCreateView(APIView):
             mime_type=uploaded_file.content_type or f"application/{file_extension}",
         )
         document.save()
+
+        # Lance l'OCR en arrière-plan (traitement non bloquant)
+        try:
+            process_document_file_async(document)
+        except Exception:
+            # Le traitement peut échouer si Tesseract/Poppler n'est pas installé.
+            # On ne bloque pas l'upload pour autant.
+            pass
 
         return Response(
             DocumentFileSerializer(document).data,
