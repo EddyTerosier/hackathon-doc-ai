@@ -2,6 +2,7 @@ import re
 from dataclasses import dataclass, field
 from typing import Optional
 from enum import Enum
+import pdfplumber
 
 
 # ─────────────────────────────────────────────
@@ -63,6 +64,18 @@ PATTERNS = {
         r"(?:facture|invoice|fact\.?|n°|no\.?)\s*[:#\-]?\s*([A-Z0-9\-\/]{4,20})",
         re.IGNORECASE,
     ),
+
+    # Montant HT (labelisé)
+    "montant_ht": re.compile(
+        r"(?:total\s+)?H\.?T\.?\s*[:\-]?\s*(\d{1,3}(?:[\s\.\,]\d{3})*(?:[,\.]\d{2})?)\s*(?:€|EUR)",
+        re.IGNORECASE,
+    ),
+
+    # Montant TTC (labelisé)
+    "montant_ttc": re.compile(
+        r"(?:total\s+)?T\.?T\.?C\.?\s*[:\-]?\s*(\d{1,3}(?:[\s\.\,]\d{3})*(?:[,\.]\d{2})?)\s*(?:€|EUR)",
+        re.IGNORECASE,
+    ),
 }
 
 # ─────────────────────────────────────────────
@@ -103,6 +116,8 @@ class ExtractionResult:
     bic: list[str] = field(default_factory=list)
     dates: list[str] = field(default_factory=list)
     montants: list[str] = field(default_factory=list)
+    montant_ht: Optional[str] = None
+    montant_ttc: Optional[str] = None
     num_facture: Optional[str] = None
     raw_matches: dict = field(default_factory=dict)
 
@@ -118,6 +133,8 @@ class ExtractionResult:
                 "bic": self.bic,
                 "dates": self.dates,
                 "montants": self.montants,
+                "montant_ht": self.montant_ht,
+                "montant_ttc": self.montant_ttc,
                 "num_facture": self.num_facture,
             },
         }
@@ -216,12 +233,76 @@ def extract(text: str) -> ExtractionResult:
     montant_matches = PATTERNS["montant"].findall(text)
     result.montants = _clean(montant_matches)
 
+    # Montant HT / TTC (labelisés)
+    ht_match = PATTERNS["montant_ht"].search(text)
+    if ht_match:
+        result.montant_ht = ht_match.group(1).strip()
+    ttc_match = PATTERNS["montant_ttc"].search(text)
+    if ttc_match:
+        result.montant_ttc = ttc_match.group(1).strip()
+
     # Numéro de facture
     num_match = PATTERNS["num_facture"].search(text)
     if num_match:
         result.num_facture = num_match.group(1).strip()
 
     return result
+
+
+# ─────────────────────────────────────────────
+# Validation métier
+# ─────────────────────────────────────────────
+
+def luhn_siret(siret: str) -> bool:
+    """Vérifie la clé de Luhn d'un SIRET (14 chiffres normalisés)."""
+    digits = re.sub(r"\D", "", siret)
+    if len(digits) != 14:
+        return False
+    total = 0
+    for i, ch in enumerate(reversed(digits)):
+        n = int(ch)
+        if i % 2 == 1:
+            n *= 2
+            if n > 9:
+                n -= 9
+        total += n
+    return total % 10 == 0
+
+
+def parse_amount(amount_str: str) -> Optional[float]:
+    """Convertit une chaîne de montant en float (ex: '1 500,00' → 1500.0)."""
+    if not amount_str:
+        return None
+    cleaned = re.sub(r"[\s\u00a0]", "", amount_str)   # espaces insécables
+    cleaned = cleaned.replace(",", ".")
+    # supprime les séparateurs de milliers si plusieurs points
+    parts = cleaned.split(".")
+    if len(parts) > 2:
+        cleaned = "".join(parts[:-1]) + "." + parts[-1]
+    try:
+        return float(cleaned)
+    except ValueError:
+        return None
+
+
+# ─────────────────────────────────────────────
+# Lecture PDF
+# ─────────────────────────────────────────────
+
+def pdf_to_text(path: str) -> str:
+    """Extrait le texte brut d'un PDF via pdfplumber."""
+    parts = []
+    with pdfplumber.open(path) as pdf:
+        for page in pdf.pages:
+            page_text = page.extract_text()
+            if page_text:
+                parts.append(page_text)
+    return "\n".join(parts)
+
+
+def extract_from_pdf(path: str) -> ExtractionResult:
+    """Extrait les champs structurés directement depuis un fichier PDF."""
+    return extract(pdf_to_text(path))
 
 
 # ─────────────────────────────────────────────

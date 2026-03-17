@@ -5,3 +5,9 @@ pymongo==4.10.1
 PyJWT==2.10.1
 python-dotenv==1.0.1
 mongomock==4.3.0
+
+pdfplumber
+regex
+python-dateutil
+Pillow
+pytesseract
