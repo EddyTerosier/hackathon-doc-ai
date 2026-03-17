@@ -112,6 +112,11 @@ class DocumentDomainTests(TestCase):
         self.assertEqual(response.status_code, 201)
         self.assertIsNone(response.data["company_id"])
         self.assertIsNone(response.data["supplier_id"])
+        self.assertEqual(response.data["status"], "processing")
+        self.assertEqual(response.data["pipeline_step"], "ocr")
+        self.assertIsNone(response.data["error"])
+        self.assertEqual(response.data["validation_result"], "pending")
+        self.assertEqual(response.data["fraud_flags"], [])
         self.assertEqual(response.data["state"], "pending")
         self.assertEqual(response.data["anomalies"], ["Potential OCR quality issue"])
         self.assertEqual(DocumentGroup.objects.count(), 1)
@@ -124,6 +129,8 @@ class DocumentDomainTests(TestCase):
             "/api/document-groups/",
             {
                 "name": "Supplier onboarding",
+                "status": "processing",
+                "pipeline_step": "ocr",
                 "state": "processing",
                 "company_id": str(company.id),
                 "supplier_id": str(supplier.id),
@@ -134,6 +141,32 @@ class DocumentDomainTests(TestCase):
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.data["company_id"], str(company.id))
         self.assertEqual(response.data["supplier_id"], str(supplier.id))
+        self.assertEqual(response.data["status"], "processing")
+        self.assertEqual(response.data["pipeline_step"], "ocr")
+        self.assertEqual(response.data["validation_result"], "pending")
+        self.assertEqual(response.data["fraud_flags"], [])
+
+    def test_patch_document_group_monitoring_fields(self):
+        group = DocumentGroup(name="Invoices", created_by=self.user).save()
+
+        response = self.client.patch(
+            f"/api/document-groups/{group.id}/",
+            {
+                "status": "failed",
+                "pipeline_step": "business_rules",
+                "error": "Missing mandatory supplier VAT number.",
+                "validation_result": "invalid",
+                "fraud_flags": ["siret_mismatch", "date_expired"],
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["status"], "failed")
+        self.assertEqual(response.data["pipeline_step"], "business_rules")
+        self.assertEqual(response.data["error"], "Missing mandatory supplier VAT number.")
+        self.assertEqual(response.data["validation_result"], "invalid")
+        self.assertEqual(response.data["fraud_flags"], ["siret_mismatch", "date_expired"])
 
     def test_non_compliant_group_requires_reason(self):
         response = self.client.post(
@@ -258,6 +291,17 @@ class SeedBusinessDataCommandTests(TestCase):
         non_compliant_group = DocumentGroup.objects(
             name="Gamma Services non compliant batch"
         ).first()
+        self.assertEqual(non_compliant_group.status, "failed")
+        self.assertEqual(non_compliant_group.pipeline_step, "compliance_checks")
+        self.assertEqual(
+            non_compliant_group.error,
+            "Business validation failed: SIRET mismatch between invoice and URSSAF certificate.",
+        )
+        self.assertEqual(non_compliant_group.validation_result, "invalid")
+        self.assertEqual(
+            non_compliant_group.fraud_flags,
+            ["siret_mismatch", "date_expired"],
+        )
         self.assertEqual(
             non_compliant_group.non_compliance_reason,
             "SIRET mismatch between invoice and URSSAF certificate.",

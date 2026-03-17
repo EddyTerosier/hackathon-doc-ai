@@ -64,6 +64,26 @@ class DocumentGroupSerializer(serializers.Serializer):
     id = serializers.CharField(read_only=True)
     name = serializers.CharField(max_length=255)
     description = serializers.CharField(required=False, allow_blank=True)
+    status = serializers.ChoiceField(
+        choices=DocumentGroup.STATUS_CHOICES,
+        required=False,
+        default=DocumentGroup.STATUS_PROCESSING,
+    )
+    pipeline_step = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        default="ocr",
+    )
+    error = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    validation_result = serializers.ChoiceField(
+        choices=DocumentGroup.VALIDATION_RESULT_CHOICES,
+        required=False,
+        default=DocumentGroup.VALIDATION_PENDING,
+    )
+    fraud_flags = serializers.ListField(
+        child=serializers.CharField(),
+        required=False,
+    )
     state = serializers.ChoiceField(
         choices=DocumentGroup.STATE_CHOICES, required=False, default=DocumentGroup.STATE_PENDING
     )
@@ -124,6 +144,11 @@ class DocumentGroupSerializer(serializers.Serializer):
             "id": str(instance.id),
             "name": instance.name,
             "description": instance.description or "",
+            "status": instance.status,
+            "pipeline_step": instance.pipeline_step,
+            "error": instance.error,
+            "validation_result": instance.validation_result,
+            "fraud_flags": instance.fraud_flags or [],
             "state": instance.state,
             "company_id": str(instance.company.id) if instance.company else None,
             "supplier_id": str(instance.supplier.id) if instance.supplier else None,

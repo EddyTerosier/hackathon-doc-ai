@@ -30,6 +30,28 @@ class TimeStampedDocument(Document):
 
 
 class DocumentGroup(TimeStampedDocument):
+    STATUS_PENDING = "pending"
+    STATUS_PROCESSING = "processing"
+    STATUS_COMPLETED = "completed"
+    STATUS_FAILED = "failed"
+    STATUS_CHOICES = (
+        STATUS_PENDING,
+        STATUS_PROCESSING,
+        STATUS_COMPLETED,
+        STATUS_FAILED,
+    )
+
+    VALIDATION_PENDING = "pending"
+    VALIDATION_VALID = "valid"
+    VALIDATION_INVALID = "invalid"
+    VALIDATION_REVIEW = "review"
+    VALIDATION_RESULT_CHOICES = (
+        VALIDATION_PENDING,
+        VALIDATION_VALID,
+        VALIDATION_INVALID,
+        VALIDATION_REVIEW,
+    )
+
     STATE_PENDING = "pending"
     STATE_COMPLETE = "complete"
     STATE_PROCESSING = "processing"
@@ -45,6 +67,19 @@ class DocumentGroup(TimeStampedDocument):
 
     name = StringField(required=True, max_length=255)
     description = StringField()
+    status = StringField(
+        required=True,
+        choices=STATUS_CHOICES,
+        default=STATUS_PROCESSING,
+    )
+    pipeline_step = StringField(required=True, max_length=100, default="ocr")
+    error = StringField(null=True)
+    validation_result = StringField(
+        required=True,
+        choices=VALIDATION_RESULT_CHOICES,
+        default=VALIDATION_PENDING,
+    )
+    fraud_flags = ListField(StringField(max_length=100), default=list)
     state = StringField(required=True, choices=STATE_CHOICES, default=STATE_PENDING)
     company = ReferenceField(Company, null=True, reverse_delete_rule=NULLIFY)
     supplier = ReferenceField(Supplier, null=True, reverse_delete_rule=NULLIFY)
@@ -58,7 +93,14 @@ class DocumentGroup(TimeStampedDocument):
 
     meta = {
         "collection": "document_groups",
-        "indexes": ["state", "company", "supplier"],
+        "indexes": [
+            "status",
+            "pipeline_step",
+            "validation_result",
+            "state",
+            "company",
+            "supplier",
+        ],
     }
 
 

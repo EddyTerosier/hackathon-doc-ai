@@ -118,6 +118,14 @@ Etats disponibles :
 - `non_compliant`
 - `compliant`
 
+Suivi technique disponible sur `DocumentGroup` :
+- `status` : `pending`, `processing`, `completed`, `failed`
+- `pipeline_step` : etape courante du pipeline, par defaut `ocr`
+- `error` : message d'erreur technique ou metier, nullable
+- `validation_result` : `pending`, `valid`, `invalid`, `review`
+- `fraud_flags` : liste des drapeaux de fraude detectes, par exemple `siret_mismatch`, `date_expired`
+- `updated_at` : deja present et mis a jour automatiquement a chaque sauvegarde
+
 Formats de documents acceptes :
 - `pdf`
 - `png`
