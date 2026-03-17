@@ -1,3 +1,5 @@
+import io
+
 from django.test import TestCase
 from django.core.management import call_command
 from rest_framework.test import APIClient
@@ -108,7 +110,7 @@ class SeedUsersCommandTests(TestCase):
         User.drop_collection()
 
     def test_seed_users_command_creates_four_default_users(self):
-        call_command("seed_users")
+        call_command("seed_users", stdout=io.StringIO())
 
         self.assertEqual(User.objects.count(), 4)
         self.assertEqual(User.objects(role=User.ROLE_ACCOUNTANT).count(), 2)
@@ -116,7 +118,7 @@ class SeedUsersCommandTests(TestCase):
         self.assertIsNotNone(User.objects(email="admin1@hackathon.local").first())
 
     def test_seed_users_command_is_idempotent(self):
-        call_command("seed_users")
-        call_command("seed_users")
+        call_command("seed_users", stdout=io.StringIO())
+        call_command("seed_users", stdout=io.StringIO())
 
         self.assertEqual(User.objects.count(), 4)

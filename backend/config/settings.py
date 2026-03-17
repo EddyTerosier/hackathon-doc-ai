@@ -17,6 +17,9 @@ INSTALLED_APPS = [
     "django.contrib.contenttypes",
     "django.contrib.staticfiles",
     "rest_framework",
+    "companies.apps.CompaniesConfig",
+    "documents.apps.DocumentsConfig",
+    "suppliers.apps.SuppliersConfig",
     "users.apps.UsersConfig",
 ]
 
@@ -45,6 +48,8 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = "static/"
+MEDIA_URL = "/media/"
+MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 MONGO_DB_NAME = os.getenv("MONGO_DB_NAME", "hackathon_db")
