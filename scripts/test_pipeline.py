@@ -40,6 +40,7 @@ def _get_airflow_password():
         return "admin"
 
 AIRFLOW_PASSWORD = _get_airflow_password()
+print(f"[debug] password utilisé : '{AIRFLOW_PASSWORD}'")
 AIRFLOW_CONTAINER = "hackathon-airflow"
 
 SCRIPT_DIR  = os.path.dirname(os.path.abspath(__file__))

@@ -1,8 +1,6 @@
 import os
 import uuid
-from datetime import datetime
 
-import requests
 from bson import ObjectId
 from django.conf import settings
 from rest_framework import permissions, status
@@ -11,6 +9,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .models import DocumentFile, DocumentGroup
+from .ocr import process_document_file_async
 from .serializers import (
     DocumentFileSerializer,
     DocumentGroupSerializer,
@@ -103,7 +102,7 @@ class GroupDocumentListCreateView(APIView):
         uploaded_file = serializer.validated_data["file"]
         file_extension = os.path.splitext(uploaded_file.name)[1].lower().lstrip(".")
         stored_name = f"{uuid.uuid4()}.{file_extension}"
-        group_directory = os.path.join(settings.MEDIA_ROOT, "raw", str(group.id))
+        group_directory = os.path.join(settings.MEDIA_ROOT, "documents", str(group.id))
         os.makedirs(group_directory, exist_ok=True)
         destination = os.path.join(group_directory, stored_name)
 
@@ -121,27 +120,13 @@ class GroupDocumentListCreateView(APIView):
         )
         document.save()
 
-        # Déclenche le pipeline Airflow avec le fichier uploadé
-        airflow_url = os.getenv("AIRFLOW_URL", "http://airflow:8080")
-        airflow_user = os.getenv("AIRFLOW_USER", "admin")
-        airflow_password = os.getenv("AIRFLOW_PASSWORD", "admin")
+        # Lance l'OCR en arrière-plan (traitement non bloquant)
         try:
-            requests.post(
-                f"{airflow_url}/api/v2/dags/document_pipeline/dagRuns",
-                json={
-                    "logical_date": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                    "conf": {
-                        "file_path": destination,
-                        "document_id": str(document.id),
-                        "group_id": str(group.id),
-                        "user_id": str(request.user.id) if request.user else None,
-                    }
-                },
-                auth=(airflow_user, airflow_password),
-                timeout=5,
-            )
-        except requests.exceptions.RequestException:
-            pass  # Ne pas bloquer l'upload si Airflow est indisponible
+            process_document_file_async(document)
+        except Exception:
+            # Le traitement peut échouer si Tesseract/Poppler n'est pas installé.
+            # On ne bloque pas l'upload pour autant.
+            pass
 
         return Response(
             DocumentFileSerializer(document).data,
