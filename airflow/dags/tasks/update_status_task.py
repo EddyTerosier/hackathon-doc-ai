@@ -60,7 +60,7 @@ def update_status(**context):
                     present_types.add(doc["document_type"])
 
             # Vérification complétude du dossier (3 types requis)
-            required_types = {"facture", "attestation_urssaf", "rib"}
+            required_types = {"invoice", "urssaf_certificate", "bank_details"}
             missing_types = required_types - present_types
             for t in missing_types:
                 all_anomalies.append(f"dossier incomplet : document manquant ({t})")

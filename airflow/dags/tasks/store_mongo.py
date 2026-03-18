@@ -16,9 +16,18 @@ def store_results(**context):
     ocr_result = ti.xcom_pull(task_ids="ocr_task")
     analysis_result = ti.xcom_pull(task_ids="classify_extract_task")
 
+    # Mapping classifier → valeurs du modèle DocumentFile
+    DOC_TYPE_MAP = {
+        "facture": "invoice",
+        "attestation_urssaf": "urssaf_certificate",
+        "rib": "bank_details",
+        "inconnu": "unknown",
+    }
+    doc_type = DOC_TYPE_MAP.get(analysis_result["document_type"], "unknown")
+
     update_fields = {
         "ocr_text": ocr_result,
-        "document_type": analysis_result["document_type"],
+        "document_type": doc_type,
         "extracted_data": analysis_result["champs"],
         "confidence_score": analysis_result.get("confidence"),
         "analysis_status": "processing",
@@ -45,5 +54,6 @@ def store_results(**context):
 
     return {
         "document_id": document_id,
-        "document_type": analysis_result["document_type"],
+        "document_type": doc_type,
+        "classifier_type": analysis_result["document_type"],
     }
