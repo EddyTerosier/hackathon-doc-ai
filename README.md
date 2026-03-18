@@ -210,6 +210,7 @@ Les 6 cas couverts :
 - **SUP004** — facture dégradée (blur) → OCR illisible, document non reconnu
 - **SUP005** — RIB sans BIC → anomalie `"BIC manquant"`
 - **SUP006** — montant TTC inférieur au HT → `ttc_lt_ht`
+- **INCOMPLET** — dossier avec 1 seul fichier → anomalies `"document manquant"` pour les 2 types absents
 
 > Les SIRETs du dataset sont tous fictifs, ils échouent systématiquement la validation Luhn → `siret_invalid` apparaît dans tous les cas, ce qui est attendu.
 

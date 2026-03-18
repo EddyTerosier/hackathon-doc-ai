@@ -165,6 +165,25 @@ SCENARIOS = {
         "expect_anomaly_keywords": ["TTC"],
         "expect_group_state":      "non_compliant",
     },
+    "INCOMPLET": {
+        "label": "INCOMPLET — dossier avec 1 seul fichier (facture uniquement)",
+        "note": "Seule la facture est uploadée → URS + RIB manquants détectés par update_status_task",
+        "supplier": {
+            "name": "Alpha Conseil",
+            "siret": "12345678901234",
+            "vat_number": "FR12123456789",
+            "iban": "FR7612345678901234567890123",
+            "bic": "AGRIFRPP",
+            "urssaf_expiration_date": datetime(2026, 6, 30),
+        },
+        "files": {
+            "facture": os.path.join(DATASET_DIR, "facture", "FAC_SUP001_conforme.pdf"),
+        },
+        "expect_flags_include":    [],
+        "expect_anomaly_keywords": ["manquant"],
+        "expect_group_state":      "non_compliant",
+        "incomplete":              True,
+    },
 }
 
 # ── Airflow ───────────────────────────────────────────────────────────────────
@@ -314,34 +333,36 @@ def verify_case(db, scenario, group_oid):
     docs  = list(db.documents.find({"group": group_oid}))
 
     # ── Checks communs ────────────────────────────────────────────────────────
-    check("3 documents présents", len(docs) == 3)
+    expected_count = len(scenario["files"])
+    check(f"{expected_count} document(s) présent(s)", len(docs) == expected_count)
 
     analyzed = [d for d in docs if d.get("analysis_status") == "analyzed"]
-    check(f"tous analyzed ({len(analyzed)}/3)", len(analyzed) == 3)
+    check(f"tous analyzed ({len(analyzed)}/{expected_count})", len(analyzed) == expected_count)
 
-    doc_types = {d.get("document_type") for d in docs}
-    check(
-        f"document_types = {{invoice, urssaf_certificate, bank_details}} — trouvé: {doc_types}",
-        doc_types == {"invoice", "urssaf_certificate", "bank_details"},
-    )
+    if not scenario.get("incomplete"):
+        doc_types = {d.get("document_type") for d in docs}
+        check(
+            f"document_types = {{invoice, urssaf_certificate, bank_details}} — trouvé: {doc_types}",
+            doc_types == {"invoice", "urssaf_certificate", "bank_details"},
+        )
 
-    docs_with_ocr = [d for d in docs if d.get("ocr_text")]
-    check(
-        f"ocr_text non vide ({len(docs_with_ocr)}/3 docs)",
-        len(docs_with_ocr) == 3,
-    )
+        docs_with_ocr = [d for d in docs if d.get("ocr_text")]
+        check(
+            f"ocr_text non vide ({len(docs_with_ocr)}/{expected_count} docs)",
+            len(docs_with_ocr) == expected_count,
+        )
 
-    docs_with_data = [d for d in docs if d.get("extracted_data")]
-    check(
-        f"extracted_data non vide ({len(docs_with_data)}/3 docs)",
-        len(docs_with_data) == 3,
-    )
+        docs_with_data = [d for d in docs if d.get("extracted_data")]
+        check(
+            f"extracted_data non vide ({len(docs_with_data)}/{expected_count} docs)",
+            len(docs_with_data) == expected_count,
+        )
 
-    docs_with_conf = [d for d in docs if d.get("confidence_score") is not None]
-    check(
-        f"confidence_score présent ({len(docs_with_conf)}/3 docs)",
-        len(docs_with_conf) == 3,
-    )
+        docs_with_conf = [d for d in docs if d.get("confidence_score") is not None]
+        check(
+            f"confidence_score présent ({len(docs_with_conf)}/{expected_count} docs)",
+            len(docs_with_conf) == expected_count,
+        )
 
     check("group.status = 'completed'", group.get("status") == "completed")
     check(
