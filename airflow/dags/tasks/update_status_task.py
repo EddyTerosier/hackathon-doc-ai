@@ -42,16 +42,28 @@ def update_status(**context):
     if group_id and ObjectId.is_valid(group_id):
         group_oid = ObjectId(group_id)
         total = db.documents.count_documents({"group": group_oid})
-        analyzed = db.documents.count_documents({
+        terminal = db.documents.count_documents({
             "group": group_oid,
-            "analysis_status": "analyzed"
+            "analysis_status": {"$in": ["analyzed", "failed"]}
         })
 
-        if total > 0 and analyzed >= total:
-            # Récupère toutes les anomalies de tous les fichiers du groupe
+        if total > 0 and terminal >= total:
+            # Récupère toutes les anomalies + types de tous les fichiers du groupe
             all_anomalies = []
-            for doc in db.documents.find({"group": group_oid}, {"anomalies": 1}):
-                all_anomalies.extend(doc.get("anomalies", []))
+            present_types = set()
+            for doc in db.documents.find({"group": group_oid}, {"anomalies": 1, "document_type": 1, "analysis_status": 1}):
+                if doc.get("analysis_status") == "failed":
+                    all_anomalies.append(f"erreur technique lors du traitement ({doc.get('document_type', 'document inconnu')})")
+                else:
+                    all_anomalies.extend(doc.get("anomalies", []))
+                if doc.get("document_type"):
+                    present_types.add(doc["document_type"])
+
+            # Vérification complétude du dossier (3 types requis)
+            required_types = {"facture", "attestation_urssaf", "rib"}
+            missing_types = required_types - present_types
+            for t in missing_types:
+                all_anomalies.append(f"dossier incomplet : document manquant ({t})")
 
             group_state = "compliant" if not all_anomalies else "non_compliant"
 
@@ -67,9 +79,9 @@ def update_status(**context):
                     "updated_at": now,
                 }}
             )
-            print(f"[update_status] groupe {group_id} finalisé → {group_state}")
+            print(f"[update_status] groupe {group_id} finalisé → {group_state} (manquants: {missing_types or 'aucun'})")
         else:
-            print(f"[update_status] groupe {group_id} : {analyzed}/{total} fichiers analysés, en attente")
+            print(f"[update_status] groupe {group_id} : {terminal}/{total} fichiers traités, en attente")
 
     client.close()
 

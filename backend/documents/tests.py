@@ -215,9 +215,7 @@ class DocumentDomainTests(TestCase):
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.data["file_type"], "pdf")
         self.assertEqual(response.data["document_type"], "unknown")
-        # L'OCR est déclenché immédiatement après l'upload.
-        # Selon l'environnement, Tesseract/Poppler peut être absent, ce qui donne le statut "failed".
-        self.assertIn(response.data["analysis_status"], ["pending", "failed", "analyzed"])
+        self.assertEqual(response.data["analysis_status"], "pending")
         self.assertTrue(os.path.exists(response.data["file_path"]))
         self.assertEqual(DocumentFile.objects.count(), 1)
 

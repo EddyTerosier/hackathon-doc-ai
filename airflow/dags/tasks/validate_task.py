@@ -42,6 +42,8 @@ def run_validation(**context):
     elif doc_type == "attestation_urssaf":
         if supplier and supplier.get("urssaf_expiration_date"):
             exp = supplier["urssaf_expiration_date"]
+            if hasattr(exp, "date"):
+                exp = exp.date()
             if isinstance(exp, date) and exp < date.today():
                 anomalies.append("attestation URSSAF expirée")
         elif not champs.get("dates"):

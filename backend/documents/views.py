@@ -1,6 +1,8 @@
 import os
 import uuid
+from datetime import datetime, timezone
 
+import requests as http_requests
 from bson import ObjectId
 from django.conf import settings
 from rest_framework import permissions, status
@@ -9,12 +11,46 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .models import DocumentFile, DocumentGroup
-from .ocr import process_document_file_async
 from .serializers import (
     DocumentFileSerializer,
     DocumentGroupSerializer,
     DocumentUploadSerializer,
 )
+
+
+AIRFLOW_URL = os.getenv("AIRFLOW_URL", "http://airflow:8080")
+AIRFLOW_USER = os.getenv("AIRFLOW_USER", "admin")
+AIRFLOW_PASSWORD = os.getenv("AIRFLOW_PASSWORD", "admin")
+
+
+def _get_airflow_token():
+    response = http_requests.post(
+        f"{AIRFLOW_URL}/auth/token",
+        json={"username": AIRFLOW_USER, "password": AIRFLOW_PASSWORD},
+        timeout=10,
+    )
+    return response.json().get("access_token")
+
+
+def _trigger_airflow_dag(document_id, group_id, file_path, user_id=None):
+    try:
+        token = _get_airflow_token()
+        http_requests.post(
+            f"{AIRFLOW_URL}/api/v2/dags/document_pipeline/dagRuns",
+            json={
+                "logical_date": datetime.now(timezone.utc).isoformat(),
+                "conf": {
+                    "file_path": file_path,
+                    "document_id": document_id,
+                    "group_id": group_id,
+                    "user_id": user_id,
+                },
+            },
+            headers={"Authorization": f"Bearer {token}"},
+            timeout=10,
+        )
+    except Exception as e:
+        print(f"[airflow] Impossible de déclencher le DAG : {e}")
 
 
 def _get_object_or_404(model_class, object_id):
@@ -102,7 +138,7 @@ class GroupDocumentListCreateView(APIView):
         uploaded_file = serializer.validated_data["file"]
         file_extension = os.path.splitext(uploaded_file.name)[1].lower().lstrip(".")
         stored_name = f"{uuid.uuid4()}.{file_extension}"
-        group_directory = os.path.join(settings.MEDIA_ROOT, "documents", str(group.id))
+        group_directory = os.path.join(settings.MEDIA_ROOT, "raw", str(group.id))
         os.makedirs(group_directory, exist_ok=True)
         destination = os.path.join(group_directory, stored_name)
 
@@ -120,13 +156,9 @@ class GroupDocumentListCreateView(APIView):
         )
         document.save()
 
-        # Lance l'OCR en arrière-plan (traitement non bloquant)
-        try:
-            process_document_file_async(document)
-        except Exception:
-            # Le traitement peut échouer si Tesseract/Poppler n'est pas installé.
-            # On ne bloque pas l'upload pour autant.
-            pass
+        # Déclenche le DAG Airflow
+        user_id = str(request.user.id) if request.user and request.user.id else None
+        _trigger_airflow_dag(str(document.id), str(group.id), destination, user_id)
 
         return Response(
             DocumentFileSerializer(document).data,
