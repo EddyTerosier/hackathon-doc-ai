@@ -189,7 +189,43 @@ docker-compose.yml
 
 ---
 
-# 7. Commandes utiles
+# 7. Tests du pipeline
+
+Les scripts de test sont dans `scripts/`. Tous nécessitent que Docker soit lancé (`docker-compose up airflow mongo -d`).
+
+### 7.1 Scénarios dataset
+
+Lance un ou plusieurs cas du dataset pour vérifier que le pipeline produit les bons résultats en base :
+
+```bash
+AIRFLOW_PASSWORD="xxx" python scripts/test_all_cases.py            # tous les cas
+AIRFLOW_PASSWORD="xxx" python scripts/test_all_cases.py SUP001     # un seul cas
+```
+
+Les 6 cas couverts :
+
+- **SUP001** — dossier conforme, aucune anomalie métier attendue
+- **SUP002** — SIRET incohérent entre les documents → `siret_invalid`
+- **SUP003** — attestation URSSAF expirée → `date_expired`
+- **SUP004** — facture dégradée (blur) → OCR illisible, document non reconnu
+- **SUP005** — RIB sans BIC → anomalie `"BIC manquant"`
+- **SUP006** — montant TTC inférieur au HT → `ttc_lt_ht`
+
+> Les SIRETs du dataset sont tous fictifs, ils échouent systématiquement la validation Luhn → `siret_invalid` apparaît dans tous les cas, ce qui est attendu.
+
+### 7.2 Callback d'erreur
+
+Vérifie que le `on_failure_callback` fonctionne en déclenchant le pipeline avec un fichier qui n'existe pas :
+
+```bash
+AIRFLOW_PASSWORD="xxx" python scripts/test_callback.py
+```
+
+On s'attend à trouver une entrée dans `pipeline_errors` avec `pipeline_step: "ocr_task"` et le document en `analysis_status: "failed"`.
+
+---
+
+# 8. Commandes utiles
 
 Lister les DAGs :
 

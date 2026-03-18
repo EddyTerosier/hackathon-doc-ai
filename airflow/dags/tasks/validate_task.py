@@ -42,7 +42,10 @@ def run_validation(**context):
             supplier = db.suppliers.find_one({"_id": group["supplier"]})
 
     # Règles métier
-    if doc_type == "invoice":
+    if doc_type == "unknown":
+        anomalies.append("document illisible ou type non reconnu (OCR insuffisant)")
+
+    elif doc_type == "invoice":
         montants = champs.get("montants", [])
         montant_ht = parse_amount(champs.get("montant_ht"))
         montant_ttc = parse_amount(champs.get("montant_ttc"))

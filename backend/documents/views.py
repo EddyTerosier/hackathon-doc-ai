@@ -32,7 +32,7 @@ def _get_airflow_token():
     return response.json().get("access_token")
 
 
-def _trigger_airflow_dag(document_id, group_id, file_path, user_id=None):
+def _trigger_airflow_dag(document_id, group_id, file_path):
     try:
         token = _get_airflow_token()
         http_requests.post(
@@ -43,7 +43,6 @@ def _trigger_airflow_dag(document_id, group_id, file_path, user_id=None):
                     "file_path": file_path,
                     "document_id": document_id,
                     "group_id": group_id,
-                    "user_id": user_id,
                 },
             },
             headers={"Authorization": f"Bearer {token}"},
@@ -157,8 +156,7 @@ class GroupDocumentListCreateView(APIView):
         document.save()
 
         # Déclenche le DAG Airflow
-        user_id = str(request.user.id) if request.user and request.user.id else None
-        _trigger_airflow_dag(str(document.id), str(group.id), destination, user_id)
+        _trigger_airflow_dag(str(document.id), str(group.id), destination)
 
         return Response(
             DocumentFileSerializer(document).data,
