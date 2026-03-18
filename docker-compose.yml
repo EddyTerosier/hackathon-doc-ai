@@ -33,10 +33,17 @@ services:
       JWT_SECRET_KEY: super-secret-jwt-key
       JWT_ACCESS_LIFETIME_MINUTES: 60
       JWT_REFRESH_LIFETIME_DAYS: 7
+      MEDIA_ROOT: /data
+      AIRFLOW_URL: http://airflow:8080
+      AIRFLOW_USER: admin
+      AIRFLOW_PASSWORD: admin
     ports:
       - "8000:8000"
+    volumes:
+      - media_data:/data
     depends_on:
       - mongo
+      - airflow
 
   mongo-express:
     image: mongo-express:1.0.2
@@ -64,10 +71,14 @@ services:
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: sqlite:////opt/airflow/airflow.db
       AIRFLOW__CORE__LOAD_EXAMPLES: "False"
       MONGO_URI: mongodb://admin:admin123@mongo:27017/?authSource=admin
+      PROJECT_ROOT: /opt/airflow
+      DATA_ROOT: /data
     ports:
       - "8080:8080"
     volumes:
       - ./airflow/dags:/opt/airflow/dags
+      - ./backend:/opt/airflow/backend
+      - media_data:/data
       - airflow_logs:/opt/airflow/logs
       - airflow_db:/opt/airflow
     depends_on:
@@ -76,5 +87,6 @@ services:
 
 volumes:
   mongo_data:
+  media_data:
   airflow_logs:
   airflow_db:

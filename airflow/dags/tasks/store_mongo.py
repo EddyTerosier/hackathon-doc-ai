@@ -1,39 +1,49 @@
 import os
+from bson import ObjectId
 from pymongo import MongoClient
 from datetime import datetime, timezone
 
-""" Lit la variable d'env MONGO_URI injectée par Docker. Local : localhost"""
 MONGO_URI = os.getenv("MONGO_URI", "mongodb://admin:admin123@localhost:27017/?authSource=admin")
 DB_NAME = "hackathon_db"
 
-""" Construction du document MongoDB """
-""" Puis ecriture dans MongoDB """
+
 def store_results(**context):
-
     ti = context["ti"]
+    dag_run = context.get("dag_run")
+    conf = dag_run.conf or {} if dag_run else {}
 
+    document_id = conf.get("document_id")
     ocr_result = ti.xcom_pull(task_ids="ocr_task")
     analysis_result = ti.xcom_pull(task_ids="classify_extract_task")
 
-    document = {
-        "stored_at": datetime.now(timezone.utc),
-        "updated_at": datetime.now(timezone.utc),
+    update_fields = {
         "ocr_text": ocr_result,
         "document_type": analysis_result["document_type"],
         "extracted_data": analysis_result["champs"],
-        "status": "processing",
+        "confidence_score": analysis_result.get("confidence"),
+        "analysis_status": "processing",
         "pipeline_step": "store_db",
         "error": None,
+        "updated_at": datetime.now(timezone.utc),
     }
 
     client = MongoClient(MONGO_URI)
     db = client[DB_NAME]
 
-    result = db.documents.insert_one(document)
+    if document_id and ObjectId.is_valid(document_id):
+        db.documents.update_one(
+            {"_id": ObjectId(document_id)},
+            {"$set": update_fields}
+        )
+    else:
+        # Fallback si pas de document_id (tests locaux sans dag_run.conf)
+        update_fields["stored_at"] = datetime.now(timezone.utc).isoformat()
+        update_fields["updated_at"] = update_fields["updated_at"].isoformat()
+        db.documents.insert_one(update_fields)
 
     client.close()
 
-    document["_id"] = str(result.inserted_id)
-    document["stored_at"] = document["stored_at"].isoformat()
-
-    return document
+    return {
+        "document_id": document_id,
+        "document_type": analysis_result["document_type"],
+    }

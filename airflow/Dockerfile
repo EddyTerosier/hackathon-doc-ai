@@ -1,12 +1,15 @@
 FROM apache/airflow:3.1.8-python3.12
 
-USER root 
+USER root
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     tesseract-ocr \
     tesseract-ocr-fra \
     libgl1 \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+RUN mkdir -p /data/raw /data/clean /data/curated \
+    && chmod -R 777 /data
 
 USER airflow
 
