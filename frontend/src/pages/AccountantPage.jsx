@@ -411,13 +411,11 @@ export default function AccountantPage() {
   });
   const [supplierForm, setSupplierForm] = useState({
     name: "",
-    registration_number: "",
     siret: "",
     vat_number: "",
     iban: "",
     bic: "",
     urssaf_expiration_date: "",
-    email: "",
   });
 
   async function loadReviewData() {
@@ -474,13 +472,11 @@ export default function AccountantPage() {
       toast.success("Supplier created");
       setSupplierForm({
         name: "",
-        registration_number: "",
         siret: "",
         vat_number: "",
         iban: "",
         bic: "",
         urssaf_expiration_date: "",
-        email: "",
       });
       setShowSupplierModal(false);
       await loadReviewData();
@@ -748,12 +744,6 @@ export default function AccountantPage() {
             />
             <input
               className="custom-input"
-              placeholder="Registration number"
-              value={supplierForm.registration_number}
-              onChange={(event) => setSupplierForm((current) => ({ ...current, registration_number: event.target.value }))}
-            />
-            <input
-              className="custom-input"
               placeholder="SIRET"
               value={supplierForm.siret}
               onChange={(event) => setSupplierForm((current) => ({ ...current, siret: event.target.value }))}
@@ -781,12 +771,6 @@ export default function AccountantPage() {
               type="date"
               value={supplierForm.urssaf_expiration_date}
               onChange={(event) => setSupplierForm((current) => ({ ...current, urssaf_expiration_date: event.target.value }))}
-            />
-            <input
-              className="custom-input"
-              placeholder="Email"
-              value={supplierForm.email}
-              onChange={(event) => setSupplierForm((current) => ({ ...current, email: event.target.value }))}
             />
             <button type="submit" className="custom-button">
               Create supplier
