@@ -20,6 +20,8 @@ class DocumentFileSerializer(serializers.Serializer):
     mime_type = serializers.CharField(read_only=True)
     document_type = serializers.CharField(read_only=True)
     analysis_status = serializers.CharField(read_only=True)
+    pipeline_step = serializers.CharField(read_only=True)
+    error = serializers.CharField(read_only=True)
     ocr_text = serializers.CharField(read_only=True)
     extracted_data = serializers.DictField(read_only=True)
     anomalies = serializers.ListField(child=serializers.CharField(), read_only=True)
@@ -38,6 +40,8 @@ class DocumentFileSerializer(serializers.Serializer):
             "mime_type": instance.mime_type,
             "document_type": instance.document_type,
             "analysis_status": instance.analysis_status,
+            "pipeline_step": instance.pipeline_step or "",
+            "error": instance.error,
             "ocr_text": instance.ocr_text or "",
             "extracted_data": instance.extracted_data or {},
             "anomalies": instance.anomalies or [],

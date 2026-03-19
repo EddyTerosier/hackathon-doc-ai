@@ -149,6 +149,8 @@ class DocumentFile(TimeStampedDocument):
         choices=ANALYSIS_STATUS_CHOICES,
         default=ANALYSIS_PENDING,
     )
+    pipeline_step = StringField(max_length=100)
+    error = StringField()
     ocr_text = StringField()
     extracted_data = DictField(default=dict)
     anomalies = ListField(StringField(max_length=255), default=list)
