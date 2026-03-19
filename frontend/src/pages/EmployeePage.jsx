@@ -5,7 +5,6 @@ import { toast } from "react-hot-toast";
 import { authStorage } from "../auth/authStorage";
 import {
   createDocumentGroup,
-  getCompanies,
   getDocumentDetail,
   getDocumentGroups,
   getSuppliers,
@@ -15,8 +14,8 @@ import {
 const uploadChecklist = [
   "Create one dossier per supplier submission.",
   "Attach the invoice, URSSAF certificate, and bank details.",
-  "Let the pipeline process the upload before reviewing anomalies.",
-  "Open document detail only when you need OCR text or extracted fields.",
+  "The supplier and company are extracted from the uploaded documents.",
+  "If the dossier is compliant, the business entities can be created from extracted data later.",
 ];
 
 function formatDate(value, fallback = "Not processed yet") {
@@ -232,25 +231,18 @@ function DocumentDetailModal({ detail, loading, onClose }) {
 
 export default function EmployeePage() {
   const accessToken = authStorage.getAccess();
-  const [companies, setCompanies] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [selectedCompanyCard, setSelectedCompanyCard] = useState(null);
   const [selectedSupplierCard, setSelectedSupplierCard] = useState(null);
   const [selectedDocument, setSelectedDocument] = useState(null);
   const [documentLoading, setDocumentLoading] = useState(false);
   const [form, setForm] = useState({
     name: "",
     description: "",
-    companyId: "",
-    supplierId: "",
   });
   const [files, setFiles] = useState([]);
-
-  const selectedCompany = companies.find((item) => item.id === form.companyId) || null;
-  const selectedSupplier = suppliers.find((item) => item.id === form.supplierId) || null;
 
   async function loadDashboardData() {
     if (!accessToken) return;
@@ -258,13 +250,10 @@ export default function EmployeePage() {
     setLoading(true);
 
     try {
-      const [companyData, supplierData, groupData] = await Promise.all([
-        getCompanies(accessToken),
+      const [supplierData, groupData] = await Promise.all([
         getSuppliers(accessToken),
         getDocumentGroups(accessToken),
       ]);
-
-      setCompanies(companyData);
       setSuppliers(supplierData);
       setGroups(groupData);
     } catch {
@@ -306,8 +295,8 @@ export default function EmployeePage() {
   async function handleCreateDossier(event) {
     event.preventDefault();
 
-    if (!form.name.trim() || !form.companyId || !form.supplierId) {
-      toast.error("Add a dossier name, company, and supplier");
+    if (!form.name.trim()) {
+      toast.error("Add a dossier name");
       return;
     }
 
@@ -322,8 +311,6 @@ export default function EmployeePage() {
       const group = await createDocumentGroup(accessToken, {
         name: form.name.trim(),
         description: form.description.trim(),
-        company_id: form.companyId,
-        supplier_id: form.supplierId,
       });
 
       await Promise.all(files.map((file) => uploadDocumentToGroup(accessToken, group.id, file)));
@@ -332,8 +319,6 @@ export default function EmployeePage() {
       setForm({
         name: "",
         description: "",
-        companyId: "",
-        supplierId: "",
       });
       setFiles([]);
       await loadDashboardData();
@@ -359,13 +344,12 @@ export default function EmployeePage() {
   }
 
   const dossiers = groups.map((group) => {
-    const company = companies.find((item) => item.id === group.company_id);
-    const supplier = suppliers.find((item) => item.id === group.supplier_id);
+    const summary = group.extracted_summary || {};
 
     return {
       ...group,
-      supplierName: supplier?.name || group.extracted_summary?.supplier_name || "Unlinked supplier",
-      companyName: company?.name || "Unlinked company",
+      supplierName: summary.supplier_name || "Supplier extracted after validation",
+      companyName: summary.company_name || "Company created from extracted data if compliant",
       statusLabel: getStatusLabel(group),
       statusTone: getStatusTone(group),
       summaryChips: buildSummaryChips(group),
@@ -390,10 +374,10 @@ export default function EmployeePage() {
       <section className="dashboard-header">
         <div>
           <p className="eyebrow">EMPLOYEE DASHBOARD</p>
-          <h1>Prepare supplier dossiers before the accountant review.</h1>
+          <h1>Upload the dossier first. Business entities come from extraction.</h1>
           <p className="dashboard-text">
-            The backend flow is simple here: create a document group, upload files into it, then watch the pipeline
-            feed back dossier-level status, anomalies, and extracted summary values.
+            Employees only create a document group and upload files. Supplier and company data are meant to be
+            extracted from the documents, then created later if the dossier is compliant.
           </p>
         </div>
         <div className="dashboard-actions">
@@ -410,28 +394,13 @@ export default function EmployeePage() {
         <article className="dashboard-card">
           <div className="section-heading">
             <div>
-              <p className="eyebrow">DIRECTORY</p>
-              <h2>Companies and suppliers</h2>
+              <p className="eyebrow">SUPPLIERS</p>
+              <h2>Supplier directory</h2>
             </div>
           </div>
           <div className="compact-directory">
             <div className="compact-directory-block">
-              <p className="eyebrow">COMPANIES</p>
-              <div className="compact-card-row">
-                {companies.map((company) => (
-                  <button
-                    key={company.id}
-                    type="button"
-                    className="compact-card-button"
-                    onClick={() => setSelectedCompanyCard(company)}
-                  >
-                    {company.name}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="compact-directory-block">
-              <p className="eyebrow">SUPPLIERS</p>
+              <p className="eyebrow">KNOWN SUPPLIERS</p>
               <div className="compact-card-row">
                 {suppliers.map((supplier) => (
                   <button
@@ -446,6 +415,11 @@ export default function EmployeePage() {
               </div>
             </div>
           </div>
+          <ul className="check-list" style={{ marginTop: "1rem" }}>
+            {uploadChecklist.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
         </article>
 
         <article className="dashboard-card">
@@ -468,57 +442,6 @@ export default function EmployeePage() {
               value={form.description}
               onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))}
             />
-            <select
-              className="dashboard-select"
-              value={form.companyId}
-              onChange={(event) => setForm((current) => ({ ...current, companyId: event.target.value }))}
-            >
-              <option value="">Select company</option>
-              {companies.map((company) => (
-                <option key={company.id} value={company.id}>
-                  {company.name}
-                </option>
-              ))}
-            </select>
-            {selectedCompany ? (
-              <div className="detail-panel">
-                <p className="eyebrow">COMPANY DETAILS</p>
-                <div className="detail-grid">
-                  <DetailField label="Name" value={selectedCompany.name} />
-                  <DetailField label="Registration" value={selectedCompany.registration_number} />
-                  <DetailField label="SIRET" value={selectedCompany.siret} />
-                  <DetailField label="VAT" value={selectedCompany.vat_number} />
-                  <DetailField label="Email" value={selectedCompany.email} />
-                </div>
-              </div>
-            ) : null}
-            <select
-              className="dashboard-select"
-              value={form.supplierId}
-              onChange={(event) => setForm((current) => ({ ...current, supplierId: event.target.value }))}
-            >
-              <option value="">Select supplier</option>
-              {suppliers.map((supplier) => (
-                <option key={supplier.id} value={supplier.id}>
-                  {supplier.name}
-                </option>
-              ))}
-            </select>
-            {selectedSupplier ? (
-              <div className="detail-panel">
-                <p className="eyebrow">SUPPLIER DETAILS</p>
-                <div className="detail-grid">
-                  <DetailField label="Name" value={selectedSupplier.name} />
-                  <DetailField label="Registration" value={selectedSupplier.registration_number} />
-                  <DetailField label="SIRET" value={selectedSupplier.siret} />
-                  <DetailField label="VAT" value={selectedSupplier.vat_number} />
-                  <DetailField label="IBAN" value={selectedSupplier.iban} />
-                  <DetailField label="BIC" value={selectedSupplier.bic} />
-                  <DetailField label="URSSAF expiry" value={selectedSupplier.urssaf_expiration_date} />
-                  <DetailField label="Email" value={selectedSupplier.email} />
-                </div>
-              </div>
-            ) : null}
             <input
               className="dashboard-file-input"
               type="file"
@@ -527,8 +450,7 @@ export default function EmployeePage() {
               onChange={handleFileSelection}
             />
             <p className="dashboard-text upload-help">
-              Files are attached to one `document_group`. The backend then launches one pipeline per uploaded file and
-              returns the synthetic dossier state on the group.
+              Upload now, extraction later. This form no longer asks employees to choose companies or suppliers.
             </p>
             {files.length > 0 ? (
               <div className="selected-file-list">
@@ -553,11 +475,6 @@ export default function EmployeePage() {
               {submitting ? "Uploading..." : `Create dossier with ${files.length || 0} file${files.length === 1 ? "" : "s"}`}
             </button>
           </form>
-          <ul className="check-list">
-            {uploadChecklist.map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-          </ul>
         </article>
       </section>
 
@@ -644,33 +561,6 @@ export default function EmployeePage() {
         </article>
       </section>
 
-      <DirectoryModal
-        title={selectedCompanyCard?.name}
-        item={selectedCompanyCard}
-        onClose={() => setSelectedCompanyCard(null)}
-        fields={[
-          ["Name", "name"],
-          ["Registration", "registration_number"],
-          ["SIRET", "siret"],
-          ["VAT", "vat_number"],
-          ["Email", "email"],
-        ]}
-      />
-      <DirectoryModal
-        title={selectedSupplierCard?.name}
-        item={selectedSupplierCard}
-        onClose={() => setSelectedSupplierCard(null)}
-        fields={[
-          ["Name", "name"],
-          ["Registration", "registration_number"],
-          ["SIRET", "siret"],
-          ["VAT", "vat_number"],
-          ["IBAN", "iban"],
-          ["BIC", "bic"],
-          ["URSSAF expiry", "urssaf_expiration_date"],
-          ["Email", "email"],
-        ]}
-      />
       <DocumentDetailModal
         detail={selectedDocument}
         loading={documentLoading}
@@ -678,6 +568,19 @@ export default function EmployeePage() {
           setSelectedDocument(null);
           setDocumentLoading(false);
         }}
+      />
+      <DirectoryModal
+        title={selectedSupplierCard?.name}
+        item={selectedSupplierCard}
+        onClose={() => setSelectedSupplierCard(null)}
+        fields={[
+          ["Name", "name"],
+          ["SIRET", "siret"],
+          ["VAT", "vat_number"],
+          ["IBAN", "iban"],
+          ["BIC", "bic"],
+          ["URSSAF expiry", "urssaf_expiration_date"],
+        ]}
       />
     </main>
   );
