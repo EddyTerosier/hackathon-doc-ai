@@ -2,14 +2,14 @@
 Test de tous les scénarios du dataset contre le pipeline Airflow.
 
 Scénarios testés :
-  SUP001 conforme            → group.state: non_compliant (SIRET fictifs → Luhn échoue)
-  SUP002 siret_incoherent    → fraud_flags: siret_invalid (URSSAF SIRET = 99999999999999)
-  SUP003 attestation_expired → fraud_flags: date_expired (expiration 2026-01-15 < today)
-  SUP004 invoice_degraded    → analysé normalement, OCR potentiellement dégradé
-  SUP005 rib_missing_bic     → anomalies: BIC manquant
-  SUP006 ttc_lower_than_ht   → fraud_flags: ttc_lt_ht
+  SUP001 conforme            -> group.state: non_compliant (SIRET fictifs -> Luhn échoue)
+  SUP002 siret_incoherent    -> fraud_flags: siret_invalid (URSSAF SIRET = 99999999999999)
+  SUP003 attestation_expired -> fraud_flags: date_expired (expiration 2026-01-15 < today)
+  SUP004 invoice_degraded    -> analysé normalement, OCR potentiellement dégradé
+  SUP005 rib_missing_bic     -> anomalies: BIC manquant
+  SUP006 ttc_lower_than_ht   -> fraud_flags: ttc_lt_ht
 
-Note : tous les SIRETs du dataset sont fictifs et échouent la validation Luhn →
+Note : tous les SIRETs du dataset sont fictifs et échouent la validation Luhn ->
        siret_invalid sera présent dans fraud_flags pour tous les cas (invoice + urssaf).
 
 Prérequis :
@@ -47,7 +47,7 @@ DATASET_DIR = os.path.join(PROJECT_DIR, "dataset", "raw")
 SCENARIOS = {
     "SUP001": {
         "label": "SUP001 — conforme",
-        "note": "SIRET fictifs → siret_invalid systématique, pas de fraude métier",
+        "note": "SIRET fictifs -> siret_invalid systématique, pas de fraude métier",
         "supplier": {
             "name": "Alpha Conseil",
             "siret": "12345678901234",
@@ -63,7 +63,7 @@ SCENARIOS = {
         },
         "expect_flags_include":    [],        # aucun flag métier spécifique au scénario
         "expect_anomaly_keywords": [],
-        "expect_group_state":      "non_compliant",  # siret_invalid → non_compliant
+        "expect_group_state":      "non_compliant",  # siret_invalid -> non_compliant
     },
     "SUP002": {
         "label": "SUP002 — siret_incoherent",
@@ -87,7 +87,7 @@ SCENARIOS = {
     },
     "SUP003": {
         "label": "SUP003 — attestation_expired",
-        "note": "urssaf_expiration_date = 2026-01-15, expirée → date_expired",
+        "note": "urssaf_expiration_date = 2026-01-15, expirée -> date_expired",
         "supplier": {
             "name": "Gamma Batiment",
             "siret": "34567890123456",
@@ -107,7 +107,7 @@ SCENARIOS = {
     },
     "SUP004": {
         "label": "SUP004 — invoice_degraded",
-        "note": "Facture dégradée (blur) → OCR potentiellement incomplet, champs manquants possibles",
+        "note": "Facture dégradée (blur) -> OCR potentiellement incomplet, champs manquants possibles",
         "supplier": {
             "name": "Delta Logistique",
             "siret": "45678901234567",
@@ -127,7 +127,7 @@ SCENARIOS = {
     },
     "SUP005": {
         "label": "SUP005 — rib_missing_bic",
-        "note": "RIB sans BIC → anomalie 'BIC manquant'",
+        "note": "RIB sans BIC -> anomalie 'BIC manquant'",
         "supplier": {
             "name": "Epsilon Tech",
             "siret": "56789012345678",
@@ -147,7 +147,7 @@ SCENARIOS = {
     },
     "SUP006": {
         "label": "SUP006 — ttc_lower_than_ht",
-        "note": "montant_ttc (1400) < montant_ht (1500) → fraud_flag ttc_lt_ht",
+        "note": "montant_ttc (1400) < montant_ht (1500) -> fraud_flag ttc_lt_ht",
         "supplier": {
             "name": "Zeta Formation",
             "siret": "67890123456789",
@@ -167,7 +167,7 @@ SCENARIOS = {
     },
     "INCOMPLET": {
         "label": "INCOMPLET — dossier avec 1 seul fichier (facture uniquement)",
-        "note": "Seule la facture est uploadée → URS + RIB manquants détectés par update_status_task",
+        "note": "Seule la facture est uploadée -> URS + RIB manquants détectés par update_status_task",
         "supplier": {
             "name": "Alpha Conseil",
             "siret": "12345678901234",
@@ -414,7 +414,7 @@ def run_case(db, token, scenario_id, scenario, no_wait=False):
         container_path = copy_file_to_container(group_oid, file_path)
         doc_id         = create_document_file(db, group_oid, filename, container_path)
         run_id         = trigger_dag(token, container_path, doc_id, group_oid)
-        print(f"  → {label:8s}: {run_id}")
+        print(f"  -> {label:8s}: {run_id}")
         time.sleep(2)   # évite conflits de dagRun sur la même logical_date
 
     if no_wait:

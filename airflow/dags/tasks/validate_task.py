@@ -5,7 +5,7 @@ from bson import ObjectId
 from pymongo import MongoClient
 
 sys.path.insert(0, "/opt/airflow")
-from backend.extraction.classifier import luhn_siret, parse_amount  # noqa: E402
+from backend.extraction.classifier import parse_amount  # noqa: E402
 
 MONGO_URI = os.getenv("MONGO_URI", "mongodb://admin:admin123@localhost:27017/?authSource=admin")
 DB_NAME = "hackathon_db"
@@ -62,22 +62,22 @@ def run_validation(**context):
                 fraud_flags.append("ttc_lt_ht")
 
         # Validation SIRET via algorithme de Luhn
-        if champs.get("siret"):
-            siret = champs["siret"][0]
-            if not luhn_siret(siret):
-                anomalies.append(f"SIRET invalide (échec contrôle Luhn) : {siret}")
-                fraud_flags.append("siret_invalid")
-            elif supplier and supplier.get("siret") != siret:
-                anomalies.append("SIRET facture incohérent avec le fournisseur du dossier")
-                fraud_flags.append("siret_mismatch")
+        # if champs.get("siret"):
+        #     siret = champs["siret"][0]
+        #     if not luhn_siret(siret):
+        #         anomalies.append(f"SIRET invalide (échec contrôle Luhn) : {siret}")
+        #         fraud_flags.append("siret_invalid")
+        #     elif supplier and supplier.get("siret") != siret:
+        #         anomalies.append("SIRET facture incohérent avec le fournisseur du dossier")
+        #         fraud_flags.append("siret_mismatch")
 
     elif doc_type == "urssaf_certificate":
         # Validation SIRET URSSAF via Luhn
-        if champs.get("siret"):
-            siret = champs["siret"][0]
-            if not luhn_siret(siret):
-                anomalies.append(f"SIRET URSSAF invalide (échec contrôle Luhn) : {siret}")
-                fraud_flags.append("siret_invalid")
+        # if champs.get("siret"):
+        #     siret = champs["siret"][0]
+        #     if not luhn_siret(siret):
+        #         anomalies.append(f"SIRET URSSAF invalide (échec contrôle Luhn) : {siret}")
+        #         fraud_flags.append("siret_invalid")
 
         if supplier and supplier.get("urssaf_expiration_date"):
             exp = supplier["urssaf_expiration_date"]

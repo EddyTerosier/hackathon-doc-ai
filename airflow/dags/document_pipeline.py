@@ -1,6 +1,6 @@
 from airflow import DAG
 from airflow.operators.python import PythonOperator
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from tasks.ocr_task import run_ocr
 from tasks.classify_extract_task import run_classify_and_extract
@@ -16,6 +16,8 @@ with DAG(
     catchup=False,
     default_args={
         "on_failure_callback": on_task_failure,
+        "retries": 1,
+        "retry_delay": timedelta(seconds=3),
     }
 ) as dag:
 
