@@ -253,6 +253,39 @@ class DocumentDomainTests(TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertIn("file", response.data)
 
+    def test_get_document_detail(self):
+        group = DocumentGroup(name="Invoices", created_by=self.user).save()
+        document = DocumentFile(
+            group=group,
+            original_name="invoice.pdf",
+            stored_name="stored-invoice.pdf",
+            file_path=os.path.join(settings.MEDIA_ROOT, "documents", str(group.id), "stored-invoice.pdf"),
+            file_type="pdf",
+            mime_type="application/pdf",
+            document_type=DocumentFile.DOCUMENT_TYPE_INVOICE,
+            analysis_status=DocumentFile.ANALYSIS_ANALYZED,
+            ocr_text="Invoice OCR text",
+            extracted_data={"invoice_number": "FAC-001"},
+            anomalies=["missing_stamp"],
+            confidence_score=0.98,
+            needs_manual_review=False,
+        ).save()
+
+        response = self.client.get(f"/api/documents/{document.id}/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["id"], str(document.id))
+        self.assertEqual(response.data["group_id"], str(group.id))
+        self.assertEqual(response.data["document_type"], "invoice")
+        self.assertEqual(response.data["analysis_status"], "analyzed")
+        self.assertEqual(response.data["extracted_data"], {"invoice_number": "FAC-001"})
+
+    def test_get_document_detail_returns_404_for_unknown_document(self):
+        response = self.client.get("/api/documents/507f1f77bcf86cd799439011/")
+
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.data["detail"], "Document not found.")
+
 
 class SeedBusinessDataCommandTests(TestCase):
     @classmethod
