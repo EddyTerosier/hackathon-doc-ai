@@ -138,6 +138,12 @@ class DocumentDetailView(APIView):
     def get_object(self, document_id):
         return _get_object_or_404(DocumentFile, document_id)
 
+    def get(self, request, document_id):
+        document = self.get_object(document_id)
+        if not document:
+            return Response({"detail": "Document not found."}, status=status.HTTP_404_NOT_FOUND)
+        return Response(DocumentFileSerializer(document).data)
+
     def delete(self, request, document_id):
         document = self.get_object(document_id)
         if not document:
