@@ -13,7 +13,7 @@ from suppliers.models import Supplier
 from users.models import User
 from users.mongo import reconnect_mongo_for_tests
 
-from .models import DocumentFile, DocumentGroup
+from .models import DocumentFile, DocumentGroup, PipelineEvent
 
 
 DATASET_DIR = os.path.abspath(
@@ -34,6 +34,7 @@ class DocumentDomainTests(TestCase):
         Supplier.drop_collection()
         DocumentGroup.drop_collection()
         DocumentFile.drop_collection()
+        PipelineEvent.drop_collection()
         shutil.rmtree(settings.MEDIA_ROOT, ignore_errors=True)
 
         self.client = APIClient()
@@ -286,6 +287,146 @@ class DocumentDomainTests(TestCase):
         self.assertEqual(response.status_code, 404)
         self.assertEqual(response.data["detail"], "Document not found.")
 
+    def test_create_pipeline_event(self):
+        group = DocumentGroup(name="Invoices", created_by=self.user).save()
+        document = DocumentFile(
+            group=group,
+            original_name="invoice.pdf",
+            stored_name="stored-invoice.pdf",
+            file_path=os.path.join(settings.MEDIA_ROOT, "stored-invoice.pdf"),
+            file_type="pdf",
+            mime_type="application/pdf",
+        ).save()
+
+        response = self.client.post(
+            "/api/pipeline-events/",
+            {
+                "type": "technical",
+                "dag_id": "document_pipeline",
+                "run_id": "manual__2026-03-18T10:13:36.755863+00:00",
+                "pipeline_step": "validation_task",
+                "document_id": str(document.id),
+                "group_id": str(group.id),
+                "status": "error",
+                "error": "can't compare datetime.datetime to datetime.date",
+                "traceback": "NoneType: None\n",
+                "occurred_at": "2026-03-18T10:13:43.179181+00:00",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.data["type"], "technical")
+        self.assertEqual(response.data["status"], "error")
+        self.assertEqual(response.data["document_id"], str(document.id))
+        self.assertEqual(response.data["group_id"], str(group.id))
+        self.assertEqual(PipelineEvent.objects.count(), 1)
+
+    def test_list_pipeline_events_can_filter_by_group_and_document(self):
+        group_a = DocumentGroup(name="Group A", created_by=self.user).save()
+        group_b = DocumentGroup(name="Group B", created_by=self.user).save()
+        document_a = DocumentFile(
+            group=group_a,
+            original_name="a.pdf",
+            stored_name="a.pdf",
+            file_path=os.path.join(settings.MEDIA_ROOT, "a.pdf"),
+            file_type="pdf",
+            mime_type="application/pdf",
+        ).save()
+        document_b = DocumentFile(
+            group=group_b,
+            original_name="b.pdf",
+            stored_name="b.pdf",
+            file_path=os.path.join(settings.MEDIA_ROOT, "b.pdf"),
+            file_type="pdf",
+            mime_type="application/pdf",
+        ).save()
+
+        PipelineEvent(
+            dag_id="document_pipeline",
+            run_id="run-a",
+            pipeline_step="validation_task",
+            document_id=str(document_a.id),
+            group_id=str(group_a.id),
+            status="error",
+            error="group a error",
+        ).save()
+        PipelineEvent(
+            dag_id="document_pipeline",
+            run_id="run-b",
+            pipeline_step="ocr_task",
+            document_id=str(document_b.id),
+            group_id=str(group_b.id),
+            status="success",
+        ).save()
+
+        response = self.client.get(
+            f"/api/pipeline-events/?group_id={group_a.id}&document_id={document_a.id}"
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]["group_id"], str(group_a.id))
+        self.assertEqual(response.data[0]["document_id"], str(document_a.id))
+
+    def test_patch_pipeline_event(self):
+        group = DocumentGroup(name="Invoices", created_by=self.user).save()
+        document = DocumentFile(
+            group=group,
+            original_name="invoice.pdf",
+            stored_name="stored-invoice.pdf",
+            file_path=os.path.join(settings.MEDIA_ROOT, "invoice.pdf"),
+            file_type="pdf",
+            mime_type="application/pdf",
+        ).save()
+        event = PipelineEvent(
+            dag_id="document_pipeline",
+            run_id="run-1",
+            pipeline_step="validation_task",
+            document_id=str(document.id),
+            group_id=str(group.id),
+            status="running",
+        ).save()
+
+        response = self.client.patch(
+            f"/api/pipeline-events/{event.id}/",
+            {
+                "status": "error",
+                "error": "can't compare datetime.datetime to datetime.date",
+                "traceback": "NoneType: None\n",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["status"], "error")
+        self.assertEqual(response.data["error"], "can't compare datetime.datetime to datetime.date")
+
+    def test_delete_pipeline_event(self):
+        group = DocumentGroup(name="Invoices", created_by=self.user).save()
+        document = DocumentFile(
+            group=group,
+            original_name="invoice.pdf",
+            stored_name="stored-invoice.pdf",
+            file_path=os.path.join(settings.MEDIA_ROOT, "invoice.pdf"),
+            file_type="pdf",
+            mime_type="application/pdf",
+        ).save()
+        event = PipelineEvent(
+            dag_id="document_pipeline",
+            run_id="run-1",
+            pipeline_step="validation_task",
+            document_id=str(document.id),
+            group_id=str(group.id),
+            status="error",
+            error="failure",
+        ).save()
+
+        response = self.client.delete(f"/api/pipeline-events/{event.id}/")
+
+        self.assertEqual(response.status_code, 204)
+        self.assertEqual(PipelineEvent.objects.count(), 0)
+
 
 class SeedBusinessDataCommandTests(TestCase):
     @classmethod
@@ -300,6 +441,7 @@ class SeedBusinessDataCommandTests(TestCase):
         Supplier.drop_collection()
         DocumentGroup.drop_collection()
         DocumentFile.drop_collection()
+        PipelineEvent.drop_collection()
         shutil.rmtree(settings.MEDIA_ROOT, ignore_errors=True)
 
     def tearDown(self):

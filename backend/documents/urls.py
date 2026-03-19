@@ -5,6 +5,8 @@ from .views import (
     DocumentGroupDetailView,
     DocumentGroupListCreateView,
     GroupDocumentListCreateView,
+    PipelineEventDetailView,
+    PipelineEventListCreateView,
 )
 
 
@@ -25,4 +27,10 @@ urlpatterns = [
         name="group-document-list-create",
     ),
     path("documents/<str:document_id>/", DocumentDetailView.as_view(), name="document-detail"),
+    path("pipeline-events/", PipelineEventListCreateView.as_view(), name="pipeline-event-list-create"),
+    path(
+        "pipeline-events/<str:event_id>/",
+        PipelineEventDetailView.as_view(),
+        name="pipeline-event-detail",
+    ),
 ]

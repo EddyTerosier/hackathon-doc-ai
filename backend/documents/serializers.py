@@ -1,3 +1,4 @@
+import datetime
 import os
 
 from bson import ObjectId
@@ -6,7 +7,7 @@ from rest_framework import serializers
 from companies.models import Company
 from suppliers.models import Supplier
 
-from .models import DocumentFile, DocumentGroup
+from .models import DocumentFile, DocumentGroup, PipelineEvent
 
 
 class DocumentFileSerializer(serializers.Serializer):
@@ -174,6 +175,78 @@ class DocumentGroupSerializer(serializers.Serializer):
         group = DocumentGroup(**validated_data)
         group.save()
         return group
+
+    def update(self, instance, validated_data):
+        for field, value in validated_data.items():
+            setattr(instance, field, value)
+        instance.save()
+        return instance
+
+
+class PipelineEventSerializer(serializers.Serializer):
+    id = serializers.CharField(read_only=True)
+    type = serializers.ChoiceField(choices=PipelineEvent.TYPE_CHOICES, required=False)
+    dag_id = serializers.CharField(max_length=255)
+    run_id = serializers.CharField(max_length=255)
+    pipeline_step = serializers.CharField(max_length=100)
+    document_id = serializers.CharField(max_length=24)
+    group_id = serializers.CharField(max_length=24)
+    status = serializers.ChoiceField(choices=PipelineEvent.STATUS_CHOICES, required=False)
+    error = serializers.CharField(required=False, allow_blank=True)
+    traceback = serializers.CharField(required=False, allow_blank=True)
+    occurred_at = serializers.DateTimeField(required=False)
+
+    def validate_document_id(self, value):
+        if not ObjectId.is_valid(value):
+            raise serializers.ValidationError("Invalid id.")
+        return value
+
+    def validate_group_id(self, value):
+        if not ObjectId.is_valid(value):
+            raise serializers.ValidationError("Invalid id.")
+        return value
+
+    def validate(self, attrs):
+        status_value = attrs.get("status", getattr(self.instance, "status", PipelineEvent.STATUS_PENDING))
+        error = attrs.get("error", getattr(self.instance, "error", ""))
+        if status_value == PipelineEvent.STATUS_ERROR and not error:
+            raise serializers.ValidationError(
+                {"error": "This field is required when status is error."}
+            )
+        return attrs
+
+    def to_representation(self, instance):
+        return {
+            "id": str(instance.id),
+            "type": instance.type,
+            "dag_id": instance.dag_id,
+            "run_id": instance.run_id,
+            "pipeline_step": instance.pipeline_step,
+            "document_id": instance.document_id,
+            "group_id": instance.group_id,
+            "status": instance.status,
+            "error": instance.error or "",
+            "traceback": instance.traceback or "",
+            "occurred_at": instance.occurred_at.isoformat(),
+            "created_at": instance.created_at.isoformat(),
+            "updated_at": instance.updated_at.isoformat(),
+        }
+
+    def create(self, validated_data):
+        event = PipelineEvent(
+            type=validated_data.get("type", PipelineEvent.TYPE_TECHNICAL),
+            status=validated_data.get("status", PipelineEvent.STATUS_PENDING),
+            occurred_at=validated_data.get("occurred_at"),
+            **{
+                key: value
+                for key, value in validated_data.items()
+                if key not in {"type", "status", "occurred_at"}
+            },
+        )
+        if event.occurred_at is None:
+            event.occurred_at = datetime.datetime.utcnow()
+        event.save()
+        return event
 
     def update(self, instance, validated_data):
         for field, value in validated_data.items():

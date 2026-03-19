@@ -10,10 +10,11 @@ from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import DocumentFile, DocumentGroup
+from .models import DocumentFile, DocumentGroup, PipelineEvent
 from .serializers import (
     DocumentFileSerializer,
     DocumentGroupSerializer,
+    PipelineEventSerializer,
     DocumentUploadSerializer,
 )
 
@@ -182,4 +183,55 @@ class DocumentDetailView(APIView):
         if os.path.exists(document.file_path):
             os.remove(document.file_path)
         document.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class PipelineEventListCreateView(APIView):
+    def get(self, request):
+        events = PipelineEvent.objects.order_by("-occurred_at")
+
+        for field_name in ("type", "status", "dag_id", "run_id", "document_id", "group_id"):
+            field_value = request.query_params.get(field_name)
+            if field_value:
+                events = events.filter(**{field_name: field_value})
+
+        pipeline_step = request.query_params.get("pipeline_step")
+        if pipeline_step:
+            events = events.filter(pipeline_step=pipeline_step)
+
+        return Response(PipelineEventSerializer(events, many=True).data)
+
+    def post(self, request):
+        serializer = PipelineEventSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        event = serializer.save()
+        return Response(PipelineEventSerializer(event).data, status=status.HTTP_201_CREATED)
+
+
+class PipelineEventDetailView(APIView):
+    def get_object(self, event_id):
+        return _get_object_or_404(PipelineEvent, event_id)
+
+    def get(self, request, event_id):
+        event = self.get_object(event_id)
+        if not event:
+            return Response({"detail": "Pipeline event not found."}, status=status.HTTP_404_NOT_FOUND)
+        return Response(PipelineEventSerializer(event).data)
+
+    def patch(self, request, event_id):
+        event = self.get_object(event_id)
+        if not event:
+            return Response({"detail": "Pipeline event not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = PipelineEventSerializer(event, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+
+    def delete(self, request, event_id):
+        event = self.get_object(event_id)
+        if not event:
+            return Response({"detail": "Pipeline event not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        event.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)

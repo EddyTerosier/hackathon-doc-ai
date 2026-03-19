@@ -159,3 +159,48 @@ class DocumentFile(TimeStampedDocument):
         "collection": "documents",
         "indexes": ["group", "file_type", "document_type", "analysis_status"],
     }
+
+
+class PipelineEvent(TimeStampedDocument):
+    TYPE_TECHNICAL = "technical"
+    TYPE_BUSINESS = "business"
+    TYPE_CHOICES = (
+        TYPE_TECHNICAL,
+        TYPE_BUSINESS,
+    )
+
+    STATUS_PENDING = "pending"
+    STATUS_RUNNING = "running"
+    STATUS_SUCCESS = "success"
+    STATUS_ERROR = "error"
+    STATUS_CHOICES = (
+        STATUS_PENDING,
+        STATUS_RUNNING,
+        STATUS_SUCCESS,
+        STATUS_ERROR,
+    )
+
+    type = StringField(required=True, choices=TYPE_CHOICES, default=TYPE_TECHNICAL)
+    dag_id = StringField(required=True, max_length=255)
+    run_id = StringField(required=True, max_length=255)
+    pipeline_step = StringField(required=True, max_length=100)
+    document_id = StringField(required=True, max_length=24)
+    group_id = StringField(required=True, max_length=24)
+    status = StringField(required=True, choices=STATUS_CHOICES, default=STATUS_PENDING)
+    error = StringField()
+    traceback = StringField()
+    occurred_at = DateTimeField(required=True, default=datetime.datetime.utcnow)
+
+    meta = {
+        "collection": "pipeline_events",
+        "indexes": [
+            "type",
+            "dag_id",
+            "run_id",
+            "pipeline_step",
+            "document_id",
+            "group_id",
+            "status",
+            "occurred_at",
+        ],
+    }
