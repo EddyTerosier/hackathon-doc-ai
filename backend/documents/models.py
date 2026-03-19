@@ -192,7 +192,7 @@ class PipelineEvent(TimeStampedDocument):
     occurred_at = DateTimeField(required=True, default=datetime.datetime.utcnow)
 
     meta = {
-        "collection": "pipeline_events",
+        "collection": "pipeline_errors",
         "indexes": [
             "type",
             "dag_id",
