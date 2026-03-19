@@ -18,4 +18,8 @@ COPY requirements.txt /requirements.txt
 RUN pip install --no-cache-dir -r /requirements.txt
 
 COPY dags/ /opt/airflow/dags/
+USER root
+COPY start-airflow.sh /start-airflow.sh
+RUN chmod +x /start-airflow.sh
+USER airflow
 

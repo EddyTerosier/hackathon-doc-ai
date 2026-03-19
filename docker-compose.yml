@@ -45,6 +45,16 @@ services:
       - mongo
       - airflow
 
+  frontend:
+    build:
+      context: ./frontend
+    container_name: hackathon-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
   mongo-express:
     image: mongo-express:1.0.2
     container_name: hackathon-mongo-express
@@ -83,7 +93,7 @@ services:
       - airflow_db:/opt/airflow
     depends_on:
       - mongo
-    command: standalone
+    entrypoint: ["/bin/sh", "/start-airflow.sh"]
 
 volumes:
   mongo_data:
